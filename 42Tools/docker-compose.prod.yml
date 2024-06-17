@@ -1,0 +1,28 @@
+services:
+  nest:
+    image: node:21-bookworm
+    # build:
+    #   context: .
+    restart: always
+    volumes:
+      - ./back:/back
+      - /back/node_modules
+      - ./front/dist:/front/dist
+    working_dir: /back
+    command: /bin/bash -c "npm config set loglevel info && npm --version && npm install && npm run build && node dist/main.js"
+    networks:
+      - int_traefik
+      - int_database
+      - default
+    labels:
+      traefik.http.routers.42tools.rule: (Host(`42tools.slopez.dev`))
+      traefik.http.services.42tools.loadbalancer.server.port: 3000
+      traefik.http.routers.42tools.middlewares: get-original-cloudflareip@file
+      traefik.enable: true
+
+networks:
+  int_traefik:
+    external: true
+
+  int_database:
+    external: true

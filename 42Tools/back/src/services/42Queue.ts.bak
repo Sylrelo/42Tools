@@ -1,0 +1,315 @@
+import crypto from "crypto"
+import { LessThan, MoreThan } from "typeorm"
+import { ApiKey } from "./Entities/ApiKey"
+import { AppDataSource } from "./data-source"
+import { User } from "./Interfaces/42"
+import { SESSIONS } from "./Sessions"
+
+
+export class Promised<T> {
+
+    promise: Promise<T>
+    resolve: (value: T) => void
+    reject: (readon?: any) => void
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve
+            this.reject = reject
+        })
+    }
+
+}
+
+interface QueueJob {
+    method: string
+    endpoint: string
+    promised: Promised<any>
+    data?: any
+    retries: number
+    getAllPage: boolean
+    isLogin?: string
+}
+
+interface LoginJob {
+    promised: Promised<any>
+    code: string
+    redirectUri: string
+}
+
+class Queue42 {
+    MAX_JOB = 2
+    API_URI = "https://api.intra.42.fr"
+
+    REPO = AppDataSource.getRepository(ApiKey)
+
+    jobs: QueueJob[] = []
+    loginJobs: LoginJob[] = []
+
+    runningJobs = 0
+
+    constructor() {
+        console.log("Init 42Queue");
+
+        (async () => {
+
+        })();
+    }
+
+    async login(code: string, redirectUri: string): Promise<any> {
+        const promised = new Promised<any>()
+
+        this.loginJobs.push({
+            code,
+            redirectUri,
+            promised
+        })
+
+        return promised.promise
+    }
+
+    async add<T>(method: string, endpoint: string, options?: {
+        getAllPage?: boolean,
+        data?: any,
+        isLogin?: boolean
+    }): Promise<T> {
+        const promised = new Promised<T>()
+
+        this.jobs.push({
+            method,
+            endpoint,
+            data: options?.data,
+            promised,
+            retries: 0,
+            getAllPage: options?.getAllPage ?? false
+        })
+
+        return promised.promise
+    }
+
+    private async exchangeToken(clientId: string, clientSecret: string): Promise<null | Record<string, any>> {
+        console.log("Exchanging token");
+
+        if (clientId == null || clientSecret == null)
+            return null;
+
+        const data = {
+            grant_type: "client_credentials",
+            client_id: clientId,
+            client_secret: clientSecret
+        }
+
+        const response = await fetch("https://api.intra.42.fr/oauth/token", {
+            method: "post",
+            body: JSON.stringify(data),
+            headers: {
+                "content-type": "application/json"
+            }
+        })
+
+        const jsonResponse: any = await response.json()
+
+        const tokenData = {
+            token: jsonResponse['access_token'],
+            createdAt: jsonResponse['created_at'],
+            expiresIn: jsonResponse['expires_in'],
+        }
+
+        await this.REPO.update({ clientId }, { token: tokenData.token, tokenCreatedAt: tokenData.createdAt, tokenExpiresIn: tokenData.expiresIn })
+        // this.updateToken({ clientId }, (_) => ({ ...tokenData }))
+
+        return tokenData
+    }
+
+    private async getToken(): Promise<string | null> {
+        const key = await this.REPO.findOne({
+            where: {
+                currentUsage: LessThan(2),
+                totalRequestCount: MoreThan(10),
+            }, order: {
+                totalRequestCount: "DESC"
+            }
+        })
+
+        if (key == null) return null
+
+        if (key.token === null || (Date.now() / 1000) - (key.tokenCreatedAt + key.tokenExpiresIn + 60) >= 0) {
+            const token = await this.exchangeToken(key.clientId, key.clientSecret)
+
+            if (token == null) {
+                console.error("Exchanging token failed.")
+                await this.REPO.update({ clientId: key.clientId }, {
+                    token: null,
+                    tokenCreatedAt: 0,
+                    tokenExpiresIn: 0
+                })
+
+                return null;
+            }
+
+            const tokenData = {
+                token: token.token,
+                tokenCreatedAt: token.createdAt,
+                tokenExpiresIn: token.expiresIn
+            }
+
+            await this.REPO.update({ clientId: key.clientId }, tokenData)
+
+            return token.token;
+        }
+
+        return key.token
+    }
+
+    async handleLoginQueue() {
+        if (this.loginJobs.length === 0)
+            return;
+
+        const key = await this.REPO.findOne({
+            where: {
+                type: "LOGIN"
+            }
+        })
+
+        if (key == null)
+            return;
+
+        const job = this.loginJobs.pop()!
+
+        const response = await fetch(this.API_URI + "/oauth/token", {
+            method: "post",
+            body: JSON.stringify({
+                client_id: key.clientId,
+                client_secret: key.clientSecret,
+                grant_type: "authorization_code",
+                redirect_uri: "http://localhost:5173/auth-redirect",
+                code: job?.code,
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+
+        if (response.statusText !== "OK") {
+            console.error("Login", response.statusText)
+
+            job.promised.reject({ error: response.statusText })
+            return;
+        }
+
+        const responseJson: any = await response.json()
+
+        const userInfos = await fetch(this.API_URI + "/v2/me", {
+            method: "get",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + responseJson["access_token"]
+            }
+        })
+
+        if (userInfos.statusText !== "OK") {
+            job.promised.reject({ error: userInfos.statusText })
+            return;
+        }
+
+        const userInfosJson: User = await userInfos.json() as any;
+        const sessionToken = crypto.randomBytes(512).toString('hex')
+
+        const currentCampus = userInfosJson.campus!.find(c => c.active === true)
+        SESSIONS[sessionToken] = {
+            userId: userInfosJson.id,
+            login: userInfosJson.login,
+            lastSeenAt: Date.now(),
+            campusId: currentCampus.id,
+            sessionToken
+        }
+
+        job.promised.resolve(SESSIONS[sessionToken])
+    }
+
+    async handle() {
+        if (this.jobs.length === 0)
+            return;
+
+        const token = await this.getToken()
+
+        if (token == null) {
+            return;
+        }
+
+        this.popWork(token)
+    }
+
+    // private async getTokenInfos(token: string) {
+    //     const response = await fetch(this.API_URI + "/oauth/token/info", {
+    //         method: "get",
+    //         headers: {
+    //             "Authorization": "Bearer " + token
+    //         }
+    //     })
+    // }
+
+    private async popWork(token: string) {
+        let rateLimitRemaining = -1
+
+        try {
+            const job = this.jobs.shift()
+
+            if (job == null)
+                return
+
+
+            // this.updateToken({ token }, (old) => ({ currentUsage: old.currentUsage + 1 }))
+            await this.REPO.increment({ token }, "currentUsage", 1)
+
+            // console.log("->", job.method, job.endpoint)
+
+            // await sleep(5000)
+            const response = await fetch(this.API_URI + job.endpoint, {
+                method: job.method,
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+
+            rateLimitRemaining = parseInt(response.headers.get("x-hourly-ratelimit-remaining") ?? "-1")
+
+            if (response.statusText === "Unauthorized") {
+                console.log("Unauthorized")
+                await this.REPO.update({ token }, {
+                    token: null,
+                    tokenExpiresIn: 0,
+                    tokenCreatedAt: 0,
+                    currentUsage: 0
+                })
+
+                this.jobs.push({
+                    ...job,
+                    retries: job.retries + 1
+                })
+
+                return;
+            }
+
+            // console.log(token, response.statusText)
+            const asJson = await response.json()
+            job.promised.resolve(asJson)
+
+            const perPage = response.headers.get("x-per-page") ?? "0"
+            const total = response.headers.get("x-total") ?? "0"
+            console.log("[OK]", job.endpoint, +(response.headers.get("x-page") ?? 0), +total, (+total ?? 1 / +perPage ?? 1).toFixed(0))
+
+        } catch (error: any) {
+            console.error(error)
+        } finally {
+            if (rateLimitRemaining != -1) {
+                await this.REPO.update({ token }, { totalRequestCount: rateLimitRemaining, lastUsedAt: Math.floor(Date.now() / 1000) })
+            }
+            await this.REPO.decrement({ token }, "currentUsage", 1)
+
+        }
+    }
+}
+
+
+export const QUEUE42 = new Queue42()

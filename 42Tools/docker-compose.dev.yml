@@ -1,0 +1,41 @@
+version: "3.9"
+
+
+services:
+
+  database:
+    image: postgres
+    restart: no
+    environment:
+      POSTGRES_USER: 42user
+      POSTGRES_PASSWORD: 42password
+      POSTGRES_DB: 42tools
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgresql:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: no
+    ports:
+      - 8080:8080
+
+  # backend:
+  #   container_name: "42tools_backend"
+  #   image: node:21-slim
+  #   volumes:
+  #     ./back:/back
+  #   working_dir: /back
+  #   ports:
+  #     - 3000:3000
+
+  # fontend:
+  #   container_name: "42tools_frontend"
+  #   image: node:21-slim
+  #   volumes:
+  #     ./back:/host/back
+  #     ./front:/host/front
+  #   working_dir: /host/front
+  #   ports:
+  #     - 5173:5173
