@@ -7,7 +7,7 @@
   import type { RncpDefinitionInterface } from "@back/src/modules/rncp-definition/rncp-definition.service";
   import type { CachedRncpProgress } from "@back/src/modules/rncp-progress/rncp-progress.entity";
 
-  import { Button, Card, TextPlaceholder } from "flowbite-svelte";
+  import { Alert, Button, Card, TextPlaceholder } from "flowbite-svelte";
   import GlobalRequierementCard from "./GlobalRequierementCard.svelte";
   import RncpSectionProgress from "./RncpSectionProgress.svelte";
   import type { Users } from "@back/src/modules/users/users.entity";
@@ -198,6 +198,10 @@
 
   <div>
     <p class="text-lg dark:text-white mt-4 mb-2">Project progression</p>
+    <Alert class="mb-2" color="gray">
+      Tips : You can input a custom mark to simulate progression
+    </Alert>
+
     <div class="gap-2 grid grid-cols-1 md:grid-cols-2 lg:flex">
       {#if isLoading === false && rncpDefinition[selectedRncpIndex]}
         {#each rncpDefinition[selectedRncpIndex].sections as section (section.section)}
