@@ -55,7 +55,7 @@
       <P class="mt-4 mb-4">
         {errorMessage}
       </P>
-      <Button color="red" href="/">Retry</Button>
+      <Button color="red" on:click={() => window.location.reload()}>Retry</Button>
     </div>
   {/if}
 </div>
