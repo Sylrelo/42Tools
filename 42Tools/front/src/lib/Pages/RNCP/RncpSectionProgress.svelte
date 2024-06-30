@@ -5,9 +5,8 @@
   import { Badge, Card, Indicator, Input } from "flowbite-svelte";
   import { onMount } from "svelte";
 
-  interface WithCustomSimulation {
-    customFinalMark: number
-  }
+
+  // TODO: Simplify HTML and Logic for simulation
 
   export let section: RncpDefinition;
   export let projectsUser: ProjectUsers[] = [];
@@ -65,7 +64,7 @@
 
       for (const childrenProject of rncpProject.childrenProjects) {
         const validatedProject = projectsUser.find((pu) => pu.project.id === childrenProject.id);
-        const customMark = customProjectsUser[rncpProject.project.id];
+        const customPoolProject = customProjectsUser[childrenProject.id];
 
         if (validatedProject != null) {
           totalXp += validatedProject.gainedExperience;
@@ -83,10 +82,9 @@
           };
         }
 
-        if (+customProject?.mark !== 0 ) {
-          totalXp += (+customProject.mark / 100) * rncpProject.project.experience;
+        if (+customPoolProject?.mark !== 0 ) {
+          totalXp += (+customPoolProject.mark / 100) * childrenProject.experience;
         }
-
       }
     }
 
@@ -116,9 +114,23 @@
     return rdp.childrenProjects.reduce((acc, cp) => cp.experience + acc, 0);
   }
 
+  function calculateCustomMarkForPoolGainedExperience(rdp: RncpDefinitionProjects) {
+    let total = 0;
+
+    for (const project of rdp.childrenProjects) {
+      const customMark = customProjectsUser[project.id];
+
+      if (customMark) {
+        total += (customMark.mark / 100) * project.experience;
+      }
+    }
+
+    return total;
+  }
+
   function getColorForIndicator(projectId: number) {
-    if (customProjectsUser[projectId]?.mark >= 1)
-      return "yellow";
+    // if (customProjectsUser[projectId]?.mark >= 1)
+    //   return "yellow";
     
     return projects[projectId]?.mark > 0 ? "green" : "red"
   }
@@ -165,20 +177,20 @@
                 {#if projects[project.project.id] && !project.childrenProjects.length}
                   <div>
                     <Badge color="green">{projects[project.project.id].mark} / 100</Badge>
-                    <Badge color="green">{projects[project.project.id].xp.toLocaleString()} XP</Badge>
+                    <Badge color="green" class="w-24">{projects[project.project.id].xp.toLocaleString()} XP</Badge>
                   </div>
                 {:else if projects[project.project.id]?.xp > 0}
                   <div>
                     <Badge color={getColor(projects[project.project.id].mark, 100)}>
                       {projects[project.project.id].mark} / 100
                       </Badge>
-                    <Badge color="green">{projects[project.project.id].xp} XP</Badge>
+                    <Badge color="green" class="w-24">{projects[project.project.id].xp} XP</Badge>
                   </div>
                 {:else if customProjectsUser[project.project.id]}
                   {#if project.childrenProjects.length === 0}
                     <input 
                       type="text" 
-                      class="siminput text-sm bg-gray-600 text-white"
+                      class="siminput text-sm dark:bg-gray-600 dark:text-white text-black bg-gray-100"
                       bind:value={customProjectsUser[project.project.id].mark}
                       on:input={event => {
                         //@ts-ignore
@@ -198,12 +210,19 @@
                       {((customProjectsUser[project.project.id].mark / 100) * project.project.experience).toLocaleString()} XP
                     </Badge>
                   {:else}
-                    <Badge color="dark">
-                      {calculateProjectExperience(project).toLocaleString()} XP
-                    </Badge>
+
+                    {#if calculateCustomMarkForPoolGainedExperience(project) > 0}
+                      <Badge color="yellow" class="w-24">
+                        {calculateCustomMarkForPoolGainedExperience(project).toLocaleString()} XP
+                      </Badge>
+                      {:else}
+                      <Badge color="dark" class="w-24">
+                        {calculateProjectExperience(project).toLocaleString()} XP
+                      </Badge>
+                    {/if}
                   {/if}
                 {:else}
-                  <Badge color="dark">
+                  <Badge color="dark" class="w-24">
                     {calculateProjectExperience(project).toLocaleString()} XP
                   </Badge>
                 {/if}
@@ -213,7 +232,7 @@
         </div>
 
         {#if project.childrenProjects.length}
-          <div class="text-xs mt-0.5 mx-5 flex flex-col gap-1" style="width: calc(100% - 1.25rem);">
+          <div class="text-xs mt-0.5 mx-3 flex flex-col gap-1" style="width: calc(100% - 0.75rem);">
             {#each project.childrenProjects as cp}
               <div class="flex items-center gap-2  justify-between w-full  ">
                 <div class="flex gap-2  items-center">
@@ -228,14 +247,14 @@
                         {projects[cp.id].mark}
                       </Badge>
 
-                      <Badge color="green">
-                        {projects[cp.id].xp}
+                      <Badge color="green" class="w-24">
+                        {projects[cp.id].xp} XP
                       </Badge>
-                    <!-- {:else} -->
-                      <!-- {#if customProjectsUser[cp.id]}
+                    {:else}
+                      {#if customProjectsUser[cp.id]}
                         <input 
                         type="text" 
-                        class="siminput text-sm bg-gray-600 text-white"
+                        class="siminput text-sm dark:bg-gray-600 dark:text-white text-black bg-gray-100"
                         bind:value={customProjectsUser[cp.id].mark}
                         on:input={event => {
                           //@ts-ignore
@@ -250,22 +269,22 @@
                         }}
                         />
                         {#if customProjectsUser[cp.id].mark > 0}
-                          <Badge color="yellow">
+                          <Badge color="yellow" class="w-24">
                             {((customProjectsUser[cp.id].mark / 100) * cp.experience).toLocaleString()} XP
                           </Badge>
                           {:else}
-                            <Badge color="dark">
-                              {cp.experience}
+                            <Badge color="dark" class="w-24">
+                              {cp.experience} XP
                             </Badge>
                         {/if}
 
-                      {/if} -->
+                      {/if}
 
-                      {:else}
+                      <!-- {:else}
 
                       <Badge color="dark">
                         {cp.experience.toLocaleString()} XP
-                      </Badge>
+                      </Badge> -->
                     {/if}
                   </div>
                 {/if}
@@ -287,4 +306,5 @@
     height: 21px;
     text-align: center;
   }
+
 </style>

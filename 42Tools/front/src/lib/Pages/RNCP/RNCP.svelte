@@ -199,7 +199,7 @@
   <div>
     <p class="text-lg dark:text-white mt-4 mb-2">Project progression</p>
     <Alert class="mb-2" color="gray">
-      Tips : You can click on a project to simulate validation
+      Tips : You can input a custom mark to simulate progression
     </Alert>
 
     <div class="gap-2 grid grid-cols-1 md:grid-cols-2 lg:flex">
