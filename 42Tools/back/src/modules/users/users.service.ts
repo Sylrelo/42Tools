@@ -390,6 +390,7 @@ export class UserService {
       }
 
       queryBuilder.andWhere("user.login NOT LIKE('3b3-%')");
+      queryBuilder.andWhere("user.login NOT IN('chmaubla')");
       queryBuilder.andWhere('user.is_staff = false');
 
       if (options.campus) {
