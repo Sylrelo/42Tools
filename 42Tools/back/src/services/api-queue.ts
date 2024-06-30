@@ -82,7 +82,7 @@ export class ApiQueue {
     this.apiKeyService.resetAllCurrentUsage();
     setInterval(() => {
       this.handleJobs();
-    }, 400);
+    }, 600);
   }
 
   async getTotalRequestPossible() {

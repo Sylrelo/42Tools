@@ -3,13 +3,11 @@ import { Cron, CronExpression, SchedulerRegistry, Timeout } from '@nestjs/schedu
 import { InjectDataSource } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { DataSource } from 'typeorm';
-import { IUser } from './Interfaces/42';
 import { EventUserService } from './modules/events/event-user.service';
 import { RncpProgressService } from './modules/rncp-progress/rncp-progress.service';
 import { UserLocationService } from './modules/user-locations/user-location.service';
 import { UserService } from './modules/users/users.service';
 import { ApiQueue } from './services/api-queue';
-import { sleep } from './utils';
 
 @Injectable()
 export class AppService {
