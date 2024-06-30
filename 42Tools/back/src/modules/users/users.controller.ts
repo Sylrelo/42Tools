@@ -134,11 +134,31 @@ export class UsersController {
 
   @Get('me')
   async getMyProfile(@Request() request: any) {
+    return await this.getUser(request.user.id);
+  }
+
+  @Get('/:id')
+  async getUser( @Param('id') id: number) {
     return await this.userRepository.findOne({
       where: {
-        id: request.user.id,
+        id: id,
       },
-      select: ['id', 'level'],
+      select: ['id', 'level', 'lastUpdatedAt', 'lastCachedProgressUpdatedAt'],
     });
+  }
+
+  @Post('/force-reupdate/:id')
+  async forceReupdate(@Param('id') id: number) {
+    await this.userRepository.update(
+      {
+        id: id,
+      },
+      {
+        lastCachedProgressUpdatedAt: null,
+        lastUpdatedAt: null,
+      },
+    );
+
+    return {};
   }
 }

@@ -109,6 +109,9 @@ export class UserService {
         ignoreFutureUpdate: false,
         login: Not(Like('3b3-%')),
       },
+      order: {
+        lastSeenAt: {nulls: "LAST", direction: 'ASC'},
+      },
       take: limit,
     });
 

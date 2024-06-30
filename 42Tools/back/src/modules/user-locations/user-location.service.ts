@@ -133,9 +133,8 @@ export class UserLocationService {
           userLocation.beginAt = location.begin_at;
           userLocation.endAt = location.end_at;
 
-          await this.repository.save(userLocation);
-
           try {
+            await this.repository.save(userLocation);
             await this.userRepo.update({ id: userLocation.user.id }, { lastSeenAt: location.end_at });
           } catch (error: any) {
             this.logger.error(`Cannot update user lastSeenAt: ${error?.message}`);

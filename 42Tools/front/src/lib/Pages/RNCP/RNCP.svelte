@@ -1,20 +1,23 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { httpGet } from "../../../services/http";
+  import { httpGet, httpPost, userSession } from "../../../services/http";
   import RncpProgressPreviewCard from "./RncpProgressPreviewCard.svelte";
 
   import type { ProjectUsers } from "@back/src/modules/project-users/project-users.entity";
   import type { RncpDefinitionInterface } from "@back/src/modules/rncp-definition/rncp-definition.service";
   import type { CachedRncpProgress } from "@back/src/modules/rncp-progress/rncp-progress.entity";
 
-  import { Card, TextPlaceholder } from "flowbite-svelte";
+  import { Button, Card, TextPlaceholder } from "flowbite-svelte";
   import GlobalRequierementCard from "./GlobalRequierementCard.svelte";
   import RncpSectionProgress from "./RncpSectionProgress.svelte";
+  import type { Users } from "@back/src/modules/users/users.entity";
+  import dayjs from "dayjs";
 
   export let studentId: string | null = null;
 
   let isLoading = true;
 
+  let userInfos: Users;
   let rncpDefinition: RncpDefinitionInterface[] = [];
   let myGlobalProgress: any[] = [];
 
@@ -28,6 +31,7 @@
   onMount(async () => {
     isLoading = true;
 
+    userInfos = await httpGet("/users/" + (studentId ?? "me"));
     rncpDefinition = await httpGet("/rncp-definition");
 
     let myProgress: CachedRncpProgress[] = [];
@@ -105,18 +109,41 @@
       isLoading = false;
     }, 250);
   });
+
+  async function forceReupdate() {
+    try {
+      await httpPost(`/users/force-reupdate/${(studentId ?? $userSession?.id)}`)
+      userInfos = await httpGet("/users/" + (studentId ?? $userSession?.id));
+    } catch(error){ 
+      console.error(error)
+    }
+  }
 </script>
 
 <div>
-  <p class="text-2xl font-bold dark:text-white mb-4">
-    {#if studentId}
-      {_tmpStudentName}'s
-    {:else}
-      My
-    {/if}
-
-    progression
-  </p>
+  <div class=" dark:text-white mb-4 flex justify-between">
+    <p class="text-2xl font-bold">
+      {#if studentId}
+        {_tmpStudentName}'s
+      {:else}
+        My
+      {/if}
+      progression
+    </p>
+    <div>
+      {#if userInfos?.lastUpdatedAt && dayjs(userInfos.lastUpdatedAt).diff(undefined, "day") <= -2}
+        <Button color="purple" on:click={() => forceReupdate()}>Something wrong ? Trigger an update !</Button>
+        {:else if userInfos?.lastUpdatedAt == null}
+          Update queued, come back later.
+          {:else}
+          <div class="text-sm">
+            User Updated At : {dayjs(userInfos.lastUpdatedAt).format("DD/MM/YY HH[h]")}<br/>
+            RNCP Updated At : {dayjs(userInfos.lastCachedProgressUpdatedAt).format("DD/MM/YY HH[h]")}
+          </div>
+        {/if}
+    </div>
+ 
+  </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-4 md:grid-cols-2 gap-2 mb-5">
     {#if isLoading}
