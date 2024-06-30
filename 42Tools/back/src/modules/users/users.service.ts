@@ -512,4 +512,23 @@ export class UserService {
       throw new ForbiddenException(error?.message);
     }
   }
+
+  @Timeout(2500)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { name: "AnonymizeJob", disabled: false })
+  private async anonymizeUsers() {
+    const users = await this.repo.update(
+      {
+        anonymizationDate: LessThan(dayjs().format()),
+        login: Not(Like("3b3-%"))
+      },
+      {
+        login: "3b3-Anonymized",
+        fullName: "Redacted",
+        email: "Redacted",
+        profilePicture: null,
+      })
+
+    this.logger.log(`Anonymized ${users.affected} users.`)
+  }
 }
+
