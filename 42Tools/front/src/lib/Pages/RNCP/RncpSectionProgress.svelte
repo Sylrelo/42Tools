@@ -206,7 +206,7 @@
                     />
                   {/if}
                   {#if customProjectsUser[project.project.id].mark !== 0 }
-                    <Badge color="yellow">
+                    <Badge color="yellow"  class="w-24">
                       {((customProjectsUser[project.project.id].mark / 100) * project.project.experience).toLocaleString()} XP
                     </Badge>
                   {:else}

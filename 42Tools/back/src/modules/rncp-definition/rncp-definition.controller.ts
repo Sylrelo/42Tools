@@ -41,6 +41,8 @@ export class RncpDefinitionController {
       entity.childrenProjects.push(new Projects(data.childrenProjectId));
 
       await this.rncpDefinitionProjectRepository.save(entity);
+
+      await this.service.emptyCache();
     } catch (error) {
       throw new UnprocessableEntityException(error?.message);
     }
@@ -64,6 +66,9 @@ export class RncpDefinitionController {
         rncp: new RncpDefinition(rncpDefinitionId),
         project: new Projects(data.projectId),
       });
+
+      await this.service.emptyCache();
+
     } catch (error) {
       throw new UnprocessableEntityException(error?.message);
     }
@@ -91,6 +96,9 @@ export class RncpDefinitionController {
       entity.childrenProjects = entity.childrenProjects.filter((p) => p.id !== +childrenProjectId);
 
       await this.rncpDefinitionProjectRepository.save(entity);
+
+      await this.service.emptyCache();
+
     } catch (error) {
       throw new UnprocessableEntityException(error?.message);
     }
@@ -109,6 +117,9 @@ export class RncpDefinitionController {
       await this.rncpDefinitionProjectRepository.delete({
         id: rncpDefinitionId,
       });
+
+      await this.service.emptyCache();
+
     } catch (error) {
       throw new UnprocessableEntityException(error?.message);
     }

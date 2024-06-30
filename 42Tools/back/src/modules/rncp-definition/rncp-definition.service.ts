@@ -29,6 +29,10 @@ export class RncpDefinitionService {
     private readonly cacheManager: Cache,
   ) {}
 
+  async emptyCache() {
+    await this.cacheManager.del(RncpDefinitionService.CACHE_KEY);
+  }
+
   async getAllRncp(): Promise<RncpDefinitionInterface[]> {
     const cachedRncp = await this.cacheManager.get<RncpDefinitionInterface[]>(RncpDefinitionService.CACHE_KEY);
 
