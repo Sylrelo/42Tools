@@ -32,8 +32,8 @@ export class AppService {
     return 'Hello World!';
   }
 
-  @Cron(CronExpression.EVERY_MINUTE, { disabled: false, name: 'croncon' })
-  async runBITCH() {
+  @Cron(CronExpression.EVERY_MINUTE, { disabled: false, name: 'syncJob' })
+  async syncJob() {
     let maxRequests = 20;
 
     const requestLeftThisHour = await this.apiQueue.getRequestCountLeft();

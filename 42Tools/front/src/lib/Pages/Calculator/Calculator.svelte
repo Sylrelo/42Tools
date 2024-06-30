@@ -13,6 +13,7 @@
     mark: number;
 
     internshipCalculationsData: {
+      [key: string]: number;
       videoMark: number;
       midEvalMark: number;
       finalEvalMark: number;
@@ -166,7 +167,7 @@
       simulationProjects = [
         ...simulationProjects,
         {
-          ...defaultSimulatedProject,
+          ...structuredClone(defaultSimulatedProject),
           uuid: crypto.randomUUID(),
         },
       ];
@@ -179,6 +180,18 @@
 
   $: if ([baseLevel]) {
     baseXp = estimatedXp(baseLevel);
+  }
+
+  $: if (simulationProjects) {
+    for (const sproject of simulationProjects) {
+      sproject.mark = Math.max(0, Math.min(sproject.mark, 125));
+
+      for(const key in sproject.internshipCalculationsData) {
+        sproject.internshipCalculationsData[key] = Math.max(0, Math.min(sproject.internshipCalculationsData[key], 125));
+      }
+    }
+
+    console.log(" Update");
   }
 </script>
 

@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { LastPageService, LastPageType } from '../last-page/last-page.service';
 import { ProjectSession } from './project-sessions.entity';
 import { Projects } from './projects.entity';
-import { Timeout } from '@nestjs/schedule';
+import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
 
 @Injectable()
 export class ProjectService implements OnModuleInit {
@@ -22,13 +22,10 @@ export class ProjectService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const count = await this.projectSessionRepository.count();
-
-    if (count === 0) {
-      this.syncAllProjects();
-    }
+    this._cronSync();
   }
 
+  @Cron(CronExpression.EVERY_WEEK, { disabled: false, name: 'syncProjectSession' })
   private async _cronSync() {
     const startPage = await this.lastPageService.getOne(LastPageType.PROJECT_SESSIONS);
     this.syncAllProjects(startPage);
