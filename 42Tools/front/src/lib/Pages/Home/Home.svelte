@@ -87,6 +87,7 @@
 
     for (const year in tmpMonthYear) {
       tmpMonthYear[year] = Array.from(tmpMonthYear[year]);
+      tmpMonthYear[year] = tmpMonthYear[year].sort();
     }
 
     availablePoolYears = Array.from(tmpYearSet) as number[];

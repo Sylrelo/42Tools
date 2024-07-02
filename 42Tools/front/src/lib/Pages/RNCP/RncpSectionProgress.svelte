@@ -42,6 +42,7 @@
 
     totalXp = 0;
     totalProjects = 0;
+    projects = {};
 
     for (const rncpProject of section.projects) {
       const validatedProject = projectsUser.find((pu) => pu.project.id === rncpProject.project.id);
@@ -84,6 +85,12 @@
 
         if (+customPoolProject?.mark !== 0 ) {
           totalXp += (+customPoolProject.mark / 100) * childrenProject.experience;
+
+          const tmpOldRncpProject = projects[rncpProject.project.id] ?? {};
+          projects[rncpProject.project.id] = {
+            xp: (tmpOldRncpProject.xp ?? 0) + (+customPoolProject.mark / 100) * childrenProject.experience,
+            mark: '?'
+          }
         }
       }
     }
@@ -169,7 +176,7 @@
             />
           </div>
           <div class="flex items-center grow" class:font-bold={projects[project.project.id]}>
-            <div class="flex justify-between w-full">
+            <div class="flex justify-between w-full flex-wrap">
               <div class="text-sm">
                 {project.project.name.replaceAll("[DEPRECATED]", "Old ")}
               </div>
@@ -234,7 +241,7 @@
         {#if project.childrenProjects.length}
           <div class="text-xs mt-0.5 mx-3 flex flex-col gap-1" style="width: calc(100% - 0.75rem);">
             {#each project.childrenProjects as cp}
-              <div class="flex items-center gap-2  justify-between w-full  ">
+              <div class="flex items-center gap-2  justify-between w-full flex-wrap  ">
                 <div class="flex gap-2  items-center">
                   <Indicator color={projects[cp.id] ? "green" : "red"} />
                   {cp.name} 

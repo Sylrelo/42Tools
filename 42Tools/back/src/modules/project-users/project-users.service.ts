@@ -66,13 +66,13 @@ export class ProjectUserService {
       .leftJoin('up.user', 'u')
       .where('up.finalMark > 50')
       .andWhere('up.isValidated = true')
-      .andWhere('up.createdAt >= :datestart', { datestart: dayjs().startOf('year').format() })
+      .andWhere('up.createdAt >= :datestart', { datestart: dayjs().startOf('week').format() })
       .andWhere('up.createdAt <= :dateend', { dateend: dayjs().endOf('week').format() })
       .select(['COUNT(up.id) as count', 'AVG(up.finalMark) as average_final_mark', 'u.campusId'])
       .groupBy('u.campusId')
       .getRawMany();
 
-    return result ?? {};
+      return result ?? {};
   }
 
   async getStatsAllValidatedProject(user?: Users) {

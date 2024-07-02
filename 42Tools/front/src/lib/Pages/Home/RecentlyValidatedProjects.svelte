@@ -13,6 +13,10 @@
     try {
       validatedProject = await httpGet("/project-users/recently-validated-projects");
 
+      if (validatedProject.length === 0) {
+        return;
+      }
+      
       for (const p of validatedProject) {
         globalStats.count += +p.count;
         globalStats.mark += +p.average_final_mark;
