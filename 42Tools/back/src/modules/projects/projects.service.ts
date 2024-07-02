@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IProjectSession } from 'src/Interfaces/42';
 import { ApiQueue } from 'src/services/api-queue';
@@ -10,6 +10,9 @@ import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
 
 @Injectable()
 export class ProjectService implements OnModuleInit {
+
+  private readonly _logger = new Logger(ProjectService.name);
+
   constructor(
     @InjectRepository(Projects)
     private repo: Repository<Projects>,
@@ -27,8 +30,7 @@ export class ProjectService implements OnModuleInit {
 
   @Cron(CronExpression.EVERY_WEEK, { disabled: false, name: 'syncProjectSession' })
   private async _cronSync() {
-    const startPage = await this.lastPageService.getOne(LastPageType.PROJECT_SESSIONS);
-    this.syncAllProjects(startPage);
+    this.syncAllProjects(1);
   }
 
   async getAllProjects(options?: { campusId?: number; cursusId?: number }) {
@@ -63,35 +65,51 @@ export class ProjectService implements OnModuleInit {
   }
 
   async syncAllProjects(startPage?: number, endPage?: number) {
+    const TOTAL_PER_PAGE = 50;
+
     let page = startPage ?? 1;
+    let duplicateCount = 0;
 
     while (true) {
       try {
-        // const projects = await this.apiQueue.add<IProjectSession[]>(`/v2/projects/?page[size]=55&page[number]=${page}&sort=-created_at`)
-        const projects = await this.apiQueue.add<IProjectSession[]>(
-          `/v2/project_sessions/?page[size]=55&page[number]=${page}&sort=-created_at`,
+        duplicateCount = 0;
+        const projectSessions = await this.apiQueue.add<IProjectSession[]>(
+          `/v2/project_sessions/?page[size]=${TOTAL_PER_PAGE}&page[number]=${page}&sort=-updated_at`,
         );
 
-        console.log(`Getting page ${page}, ${projects.length} results.`);
-
-        this.repo.manager.transaction(async (manager) => {
-          for (const project of projects) {
-            const projectSession = ProjectSession.FromApi(project);
-
-            await manager.save(projectSession);
+        for (const projectSession of projectSessions) {
+          try {
+            const result = await this.projectSessionRepository.exists({
+              where: {
+                id: projectSession.id,
+                updatedAt: projectSession.updated_at,
+                cursusId: projectSession.cursus_id,
+                campusId: projectSession.campus_id,
+              }
+            })
+  
+            if (result) {
+              duplicateCount++;
+            } else {
+              const projectSessionEntity = ProjectSession.FromApi(projectSession);
+              await this.projectSessionRepository.save(projectSessionEntity);
+            }
+          } catch(error) {
+            this._logger.error(error)
           }
-        });
+        }
 
-        this.lastPageService.updateOne(LastPageType.PROJECT_SESSIONS, page);
-        if (projects.length != 55 || page === endPage) {
+        this._logger.log(`Updated ${projectSessions.length - duplicateCount} projects sessions (page ${page})`);
+        if (projectSessions.length != TOTAL_PER_PAGE || page === endPage || duplicateCount === projectSessions.length) {
           break;
         }
 
         page += 1;
       } catch (error) {
-        console.error(error);
+        this._logger.error(error)
         break;
       }
     }
   }
 }
+

@@ -19,11 +19,6 @@ export class AppController {
     private readonly userLocations: UserLocationService,
   ) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
-
   //TODO: Apprenticeship Module (+Database)
   @Get('apprenticeship')
   async getApprenticeshipRythm(@Request() request: any) {

@@ -26,6 +26,15 @@ export class ProjectSession {
     @Column({ default: -1 })
     cursusId: number
 
+    @Column({ type: 'timestamptz', default: () => 'NOW()', nullable: false})
+    updatedAt: Date | string | number;
+
+    @Column({ type: 'timestamptz', default: () => 'NOW()', nullable: false })
+    createdAt: Date | string | number;
+
+    @Column({ type: 'timestamptz', default: () => 'NOW()', nullable: false})
+    addedAt: Date | string | number;
+
     static FromApi(project: IProjectSession) {
         const entity = new ProjectSession();
 
@@ -48,6 +57,12 @@ export class ProjectSession {
 
         if (project?.project)
             entity.project = Projects.FromProjectApi(project.project)
+
+        if (project?.updated_at)
+            entity.updatedAt = project.updated_at
+
+        if (project?.created_at)
+            entity.createdAt = project.created_at
 
         return entity;
     }

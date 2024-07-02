@@ -8,6 +8,7 @@ import { RncpProgressService } from './modules/rncp-progress/rncp-progress.servi
 import { UserLocationService } from './modules/user-locations/user-location.service';
 import { UserService } from './modules/users/users.service';
 import { ApiQueue } from './services/api-queue';
+import { IProjectSession } from './Interfaces/42';
 
 @Injectable()
 export class AppService {
@@ -26,9 +27,6 @@ export class AppService {
     private readonly rncpProgressService: RncpProgressService,
   ) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
 
   @Cron(CronExpression.EVERY_MINUTE, { disabled: false, name: 'syncJob' })
   async syncJob() {
