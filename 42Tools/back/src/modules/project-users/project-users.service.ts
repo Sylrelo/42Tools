@@ -11,10 +11,10 @@ export class ProjectUserService {
   constructor(
     @InjectRepository(ProjectUsers)
     private readonly repo: Repository<ProjectUsers>,
-  ) {}
+  ) { }
 
   async batchInsert(student: Users, projectUsers: IProjectUser[]) {
-    if (projectUsers.length === 0) {
+    if (!projectUsers || projectUsers?.length === 0) {
       return;
     }
 
@@ -72,7 +72,7 @@ export class ProjectUserService {
       .groupBy('u.campusId')
       .getRawMany();
 
-      return result ?? {};
+    return result ?? {};
   }
 
   async getStatsAllValidatedProject(user?: Users) {
