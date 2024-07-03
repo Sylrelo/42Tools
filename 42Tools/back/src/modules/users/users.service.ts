@@ -448,12 +448,14 @@ export class UserService {
 
   async webAuthLogin(code: string, clientId: string) {
     try {
-      const loginResponse = await this.apiQueue.add<IUser>('/oauth/token', {
+      const result = await this.apiQueue.add<any>('/oauth/token', {
         body: {
           code,
         },
         clientId,
       });
+
+      const loginResponse : IUser = result?.data ?? result;
 
       const user = Users.FromUserApi(loginResponse);
       user.lastUpdatedAt = new Date();
@@ -464,6 +466,7 @@ export class UserService {
           id: true,
         },
       });
+
 
       try {
         await this.projectUserSerivce.batchInsert(new Users(loginResponse.id), loginResponse.projects_users);

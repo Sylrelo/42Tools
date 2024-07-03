@@ -91,7 +91,7 @@
               on:click={() => {
                 userError.set(false);
                 userSession.set(null);
-                window.location.reload();
+                window.location.replace("/")
               }}
             >
               Retry

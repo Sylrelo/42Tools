@@ -29,8 +29,12 @@ export class CampusService {
                 const campuses = await this.apiQueue.add<ICampus[]>(`/v2/campus?page[size]=100&page[number]=${page}`)
 
                 for (const campus of campuses) {
-                    const campusEntity = Campus.FromApi(campus)
-                    await this.campusRepository.save(campusEntity);
+                    try {
+                        const campusEntity = Campus.FromApi(campus)
+                        await this.campusRepository.save(campusEntity);
+                    } catch(error) {
+                        this.logger.error(error, campus)
+                    }
                 }
 
                 if (campuses.length < 100)

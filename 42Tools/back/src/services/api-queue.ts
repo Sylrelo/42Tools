@@ -276,7 +276,9 @@ export class ApiQueue {
         throw new ApiError(response.statusText);
       }
 
-      return await response.json();
+      const result = await response.json();
+      return result?.data ?? result;
+      
     } catch (error) {
       if (error instanceof ApiError && error.message === 'NOT_FOUND') {
         throw error;
