@@ -44,7 +44,7 @@ export class ProjectUsers {
     static FromApi(input: IProjectUser) {
         const newEntity = new ProjectUsers();
 
-        newEntity.id = input.id;
+        newEntity.id = +input.id;
 
         if (input?.created_at)
             newEntity.createdAt = input.created_at;

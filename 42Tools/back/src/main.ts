@@ -17,6 +17,14 @@ async function bootstrap() {
 
   app.use(compression())
 
+  process.on("uncaughtException", (event) => {
+    console.error("UncaughtError", event.message)
+  })
+
+  process.on("unhandledRejection", (event) => {
+    console.error("UnhandledRejection", event ?? event)
+  })
+
   await app.listen(3000);
 }
 

@@ -27,7 +27,7 @@ export class RncpDefinitionService {
 
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) {}
+  ) { }
 
   async emptyCache() {
     await this.cacheManager.del(RncpDefinitionService.CACHE_KEY);
@@ -151,7 +151,7 @@ export class RncpDefinitionService {
     return Array.from(projectIds);
   }
 
-  // @Timeout(1500)
+  // @Timeout(500)
   async _init() {
 
     console.log("Init RNCP Definition")
@@ -184,17 +184,22 @@ export class RncpDefinitionService {
           const resultRncpDefinition = await this.repo.save(rncpDefinition);
 
           for (const project of section.projects) {
-            const projectId = project?.mainProjectId ?? project;
+            try {
+              const projectId = project?.mainProjectId ?? project;
 
-            const iProject = new RncpDefinitionProjects();
+              const iProject = new RncpDefinitionProjects();
 
-            iProject.rncp = resultRncpDefinition;
-            iProject.project = new Projects().id = projectId;
+              iProject.rncp = resultRncpDefinition;
+              iProject.project = new Projects().id = projectId;
 
-            iProject.childrenProjects = (project.projects ?? []).map((p) => new Projects(p));
+              iProject.childrenProjects = (project.projects ?? []).map((p) => new Projects(p));
 
-            await this.rncpProject.save(iProject);
+              await this.rncpProject.save(iProject);
+            } catch (error) {
+              console.error(error?.message)
+            }
           }
+
         }
 
         const rncpDefinition = new RncpDefinition();
