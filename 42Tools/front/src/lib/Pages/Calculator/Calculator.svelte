@@ -186,7 +186,9 @@
     for (const sproject of simulationProjects) {
       sproject.mark = Math.max(0, Math.min(sproject.mark, 125));
 
-      for(const key in sproject.internshipCalculationsData) {
+      for (const key in sproject.internshipCalculationsData) {
+        if (key === "contractHours") continue;
+
         sproject.internshipCalculationsData[key] = Math.max(0, Math.min(sproject.internshipCalculationsData[key], 125));
       }
     }
