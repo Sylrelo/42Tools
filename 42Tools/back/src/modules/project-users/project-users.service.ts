@@ -1,11 +1,9 @@
-import { Between, In, MoreThan, Repository } from 'typeorm';
-import { ProjectUsers } from './project-users.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IProjectUser } from 'src/Interfaces/42';
-import { Users } from '../users/users.entity';
-import { Projects } from '../projects/projects.entity';
 import dayjs from 'dayjs';
-import { Timeout } from '@nestjs/schedule';
+import { IProjectUser } from 'src/Interfaces/42';
+import { In, Repository } from 'typeorm';
+import { Users } from '../users/users.entity';
+import { ProjectUsers } from './project-users.entity';
 
 export class ProjectUserService {
   constructor(

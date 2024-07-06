@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RncpProgressService } from '../rncp-progress/rncp-progress.service';
 import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
+import { CursusUserService } from '../base/services/cursus-users.service';
 
 export const CURSUS_ID = 21; // 42cursus
 export const CAMPUS_ID = 9;
@@ -31,6 +32,7 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly rncpProgressService: RncpProgressService,
+    private readonly cursusUserService: CursusUserService,
   ) {}
 
   /* -------------------------------------------------------------------------- */
@@ -185,6 +187,8 @@ export class UserService {
     user.lastUpdatedAt = new Date();
 
     await this.repo.update({ id: studentId }, user);
+    await this.cursusUserService.updateCursusUserFromApi(studentData.cursus_users);
+    
     await this.updateCachedRncpProgress(studentId);
   }
 
@@ -467,7 +471,8 @@ export class UserService {
         },
       });
 
-
+      await this.cursusUserService.updateCursusUserFromApi(loginResponse.cursus_users);
+      
       try {
         await this.projectUserSerivce.batchInsert(new Users(loginResponse.id), loginResponse.projects_users);
       } catch (error) {

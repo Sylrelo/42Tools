@@ -4,6 +4,9 @@ import { Campus } from "./entities/campus";
 import { CampusService } from "./services/campus.service";
 import { ApiQueueModule } from "src/services/api-queue.module";
 import { CampusController } from "./controllers/campus.controller";
+import { Cursus } from "./entities/cursus";
+import { CursusUser } from "./entities/cursus-users";
+import { CursusUserService } from "./services/cursus-users.service";
 
 @Module({
 
@@ -11,20 +14,26 @@ import { CampusController } from "./controllers/campus.controller";
         ApiQueueModule,
         TypeOrmModule.forFeature(
             [
-                Campus
+                Campus,
+                Cursus,
+                CursusUser
             ]
         )
     ],
 
     providers: [
-        CampusService
+        CampusService,
+        CursusUserService
     ],
 
 
     controllers: [
         CampusController,
-    ]
+    ],
 
+    exports: [
+        CursusUserService,
+    ]
 })
 
 export class BaseModule { }
