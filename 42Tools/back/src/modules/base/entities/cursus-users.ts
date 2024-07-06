@@ -3,6 +3,7 @@ import { Users } from "src/modules/users/users.entity";
 import { Column, Entity, ManyToOne, PrimaryColumn } from "typeorm";
 import { Cursus } from "./cursus";
 import { DateForDb } from "src/utils";
+import dayjs from "dayjs";
 
 @Entity({ name: "cursus_users" })
 export class CursusUser {
@@ -20,6 +21,9 @@ export class CursusUser {
 
     @Column({ type: "timestamptz", nullable: true })
     end_at: Date | number | string
+
+    @Column({ default: false })
+    isActive: boolean
 
     @ManyToOne(() => Users, { cascade: ["insert"] })
     user: Users
@@ -43,6 +47,13 @@ export class CursusUser {
         entity.user = new Users(input.user.id);
 
         entity.cursus = Cursus.FromApi(input.cursus);
+
+        if (
+            input.begin_at != null && dayjs(input.begin_at).isBefore(undefined) 
+            && (input.end_at == null || (input.end_at != null && dayjs(input.end_at).isAfter(undefined)))
+        ) {
+            entity.isActive = true;
+        }
 
         return entity;
     }

@@ -45,10 +45,10 @@ export class AppService {
       `Requests left ${requestLeftThisHour} of ${estimatedRequestLeft} that should be left (${requestRatio}). Adapting maxRequest for this job from ${maxRequests} to ${Math.floor(maxRequests * requestRatio)}`,
     );
 
-    // if (process.env?.NODE_ENV === 'dev') {
-    //   this.logger.debug('Ignoring CronTask on DEV ENV');
-    //   return;
-    // }
+    if (process.env?.NODE_ENV === 'dev') {
+      this.logger.debug('Ignoring CronTask on DEV ENV');
+      return;
+    }
 
     maxRequests = Math.max(0, Math.floor(maxRequests * requestRatio));
 

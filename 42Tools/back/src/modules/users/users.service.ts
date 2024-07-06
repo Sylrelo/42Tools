@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { RncpProgressService } from '../rncp-progress/rncp-progress.service';
 import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
 import { CursusUserService } from '../base/services/cursus-users.service';
+import { CursusUser } from '../base/entities/cursus-users';
 
 export const CURSUS_ID = 21; // 42cursus
 export const CAMPUS_ID = 9;
@@ -26,6 +27,10 @@ export class UserService {
   constructor(
     @InjectRepository(Users)
     private repo: Repository<Users>,
+
+    @InjectRepository(CursusUser)
+    private repoCursusUser: Repository<CursusUser>,
+
     private readonly apiQueue: ApiQueue,
     private readonly projectUserSerivce: ProjectUserService,
     private readonly rncpService: RncpDefinitionService,
@@ -338,9 +343,12 @@ export class UserService {
     return this.projectUserSerivce.getValidatedRncpProject(projectIds);
   }
 
+  @Timeout(400)
   async getAllStats(options: any) {
     if (options == null) {
-      options = {};
+      options = {
+        cursusId: 21,
+      };
       options.page = 1;
       options.order = 'DESC';
     }
@@ -348,10 +356,42 @@ export class UserService {
     try {
       const START = Date.now();
 
+      // const CURSUS_OBJ = `JSON_BUILD_OBJECT(
+      //   'id', cu.id,
+      //   'level', cu.level,
+      //   'isActive', cu.is_active,
+      //   'beginAt', cu.begin_at,
+      //   'endAt', cu.end_at
+      // )`;
+
+      // const subqueryCursusUsers = this.repoCursusUser
+      //   .createQueryBuilder('cu')
+      //   .select([
+      //     `ARRAY_AGG(
+      //       JSON_BUILD_OBJECT(
+      //         'cursus_id', cu.cursus_id,
+      //         'level', cu.level
+      //       )
+      //     )`
+      //   ])
+      //   .groupBy('cu.user_id')
+      //   .where('cu.user_id = user.id')
+      //   ;
+      
+
       const queryBuilder = this.repo
         .createQueryBuilder('user')
-        .leftJoin('user.projectUser', 'pu', "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0")
-        // .leftJoin("user.eventUser", "eu", "eu.user_id = user.id")
+        .leftJoin(
+          'user.projectUser', 
+          'pu', 
+          "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0"
+        )
+        .leftJoin(
+          "user.cursuses", 
+          "cu", 
+          "cu.user_id = user.id AND cu.cursus_id = :cursusId", 
+          { cursusId: options.cursusId }
+        )
         .select([
           'user.id',
           'user.login',
@@ -361,11 +401,15 @@ export class UserService {
           'user.poolLevel',
           'user.campusId',
           'user.lastUpdatedAt',
-          'user.level',
+          // 'user.level',
+          '(CASE WHEN cu.level IS NULL THEN user.level ELSE cu.level END) as user_level',
           'user.wallet',
           'user.correctionPoint',
+          // '('+ subqueryCursusUsers.getQuery() +') as cursuses',
+          // 'ARRAY_AGG(cu.cursuses) filter(where cu.cursuses <> \'{}\') as cursuses',
+          // 'COALESCE(ARRAY_AGG(cu.cursuses), ARRAY[]::json[]) as cursuses',
+          // 'ARRAY_AGG(CASE WHEN cu.cursuses IS NULL THEN ARRAY[]::json[] ELSE (cu.cursuses) END) as cursuses',
           'COUNT(pu.user_id) as user_validated_projects',
-          // "SUM(eu.user_id) as user_events"
         ])
         .groupBy('user.id')
         .addGroupBy('user.login')
@@ -376,14 +420,14 @@ export class UserService {
         .addGroupBy('user.campusId')
         .addGroupBy('user.poolYear')
         .addGroupBy('user.lastUpdatedAt')
-        .addGroupBy('user.level')
+        .addGroupBy('cu.level')
         .addGroupBy('user.wallet')
         .addGroupBy('user.correctionPoint')
         .cache(true, 60000);
       let order = options.order ?? 'DESC';
 
       if (options.sort === 'level') {
-        queryBuilder.orderBy('user.level', order);
+        queryBuilder.orderBy('user_level', order);
       } else if (options.sort === 'wallet') {
         queryBuilder.orderBy('user.wallet', order);
       } else if (options.sort === 'poolLevel') {

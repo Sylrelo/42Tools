@@ -33,6 +33,7 @@ import { CursusUserService } from "./services/cursus-users.service";
 
     exports: [
         CursusUserService,
+        TypeOrmModule.forFeature([CursusUser])
     ]
 })
 
