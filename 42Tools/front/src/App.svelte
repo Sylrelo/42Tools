@@ -54,17 +54,21 @@
     <Router {url}>
       {#if $userSession != null}
         <Route path="/" component={Home} />
-        <Route path="/rncp-progress/:id" let:params>
-          <Rncp studentId={params.id} />
-        </Route>
 
-        <Route path="/rncp-progress" component={Rncp} />
+        {#if $userSession?.isPool !== true}
+          <Route path="/rncp-progress/:id" let:params>
+            <Rncp studentId={params.id} />
+          </Route>
 
-        <Route path="/admin/rncp" component={EditRncp} />
+          <Route path="/rncp-progress" component={Rncp} />
 
-        <Route path="/calculator" component={Calculator} />
+          <Route path="/admin/rncp" component={EditRncp} />
 
-        <Route path="/enterprises" component={EntrepriseHome} />
+          <Route path="/calculator" component={Calculator} />
+
+          <Route path="/enterprises" component={EntrepriseHome} />
+        {/if}
+
 
         <Route path="/rncp-search">
           <RncpSearch />

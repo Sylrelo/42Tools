@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RncpProgressService } from '../rncp-progress/rncp-progress.service';
 import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
+import { IUserToken } from 'src/Interfaces/UserToken';
 
 export const CURSUS_ID = 21; // 42cursus
 export const CAMPUS_ID = 9;
@@ -477,9 +478,9 @@ export class UserService {
 
       this.logger.log(`${loginResponse.login} successfully logged-in.`);
 
-      if (user.level == null || user.level === -1) {
-        throw new ForbiddenException("You don't have an active main cursus.");
-      }
+      // if (user.level == null || user.level === -1) {
+      //   throw new ForbiddenException("You don't have an active main cursus.");
+      // }
 
       // Should not happens
       if (user.anonymizationDate != null && dayjs().isAfter(user.anonymizationDate)) {
@@ -491,11 +492,14 @@ export class UserService {
 //        throw new ForbiddenException("You've been blackholed. You can't access API resources anymore.");
 //      }
 
-      const userData = {
+      const userData: IUserToken = {
         id: loginResponse.id,
         login: loginResponse.login,
         campusId: user.campusId,
-        isPool: user.level === -1 || user.level == null,
+        isPool: true,
+        poolYear: user.poolYear,
+        poolMonth: user.poolMonth,
+        // isPool: user.level === -1 || user.level == null,
         isStaff: loginResponse?.['staff?'] ?? false,
       };
 

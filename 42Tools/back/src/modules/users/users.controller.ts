@@ -15,6 +15,7 @@ import { IsNull, Not, Repository } from 'typeorm';
 import { Public } from '../auth/public.guard';
 import { Users } from './users.entity';
 import { UserService } from './users.service';
+import { IUserToken } from 'src/Interfaces/UserToken';
 
 @Controller('users')
 export class UsersController {
@@ -46,6 +47,13 @@ export class UsersController {
     @Query('poolYear') poolYear?: string,
     @Query('campus') campus?: number,
   ) {
+    const user: IUserToken = request.user;
+
+    if (user.isPool) {
+      poolMonth = user.poolMonth;
+      poolYear = user.poolYear;
+      campus = user.campusId;
+    }
     return this.userService.getAllStats({
       sort,
       order,

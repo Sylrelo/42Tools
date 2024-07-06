@@ -16,7 +16,7 @@
   } from "flowbite-svelte";
   import { onMount } from "svelte";
   import { Link } from "svelte-routing";
-  import { httpGet } from "../../../services/http";
+  import { httpGet, userSession } from "../../../services/http";
   import Paginator from "../../Paginator.svelte";
   import UserConnectionChart from "./UserConnectionChart.svelte";
   import UserOverLevel21Card from "./UserOverLevel21Card.svelte";
@@ -155,55 +155,59 @@
 
   <!-- ################################################# -->
 
-  <div class="mb-5 lg:gap-3 gap-2 grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1">
-    <UserConnectionChart />
-    <UserValidationTranscendence />
-    <UserOverLevel21Card />
+  {#if $userSession?.isPool !== true}
+    <div class="mb-5 lg:gap-3 gap-2 grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1">
+      <UserConnectionChart />
+      <UserValidationTranscendence />
+      <UserOverLevel21Card />
 
-    <RecentlyValidatedProjects />
-    <Card size="none" padding="xs">placeholder</Card>
-    <Card size="none" padding="xs">Placeholder</Card>
-  </div>
+      <RecentlyValidatedProjects />
+      <Card size="none" padding="xs">placeholder</Card>
+      <Card size="none" padding="xs">Placeholder</Card>
+    </div>
+  {/if}
+
 
   <!-- ################################################# -->
+  {#if $userSession?.isPool !== true}
+    <div class="grid lg:grid-cols-3 gap-3">
+      <div class="flex-grow">
+        <Label class="block mb-0.5">Campus</Label>
+        <Select
+          items={[{ value: null, name: "All" }, ...campusList.map((c) => ({ name: c.name, value: c.id }))]}
+          size="sm"
+          class="w-full"
+          bind:value={querySettings.campusId}
+        />
+      </div>
 
-  <div class="grid lg:grid-cols-3 gap-3">
-    <div class="flex-grow">
-      <Label class="block mb-0.5">Campus</Label>
-      <Select
-        items={[{ value: null, name: "All" }, ...campusList.map((c) => ({ name: c.name, value: c.id }))]}
-        size="sm"
-        class="w-full"
-        bind:value={querySettings.campusId}
-      />
-    </div>
+      <div class="flex-grow">
+        <Label class="block mb-0.5">Pool year</Label>
+        <Select
+          on:change={() => {
+            querySettings.page = 1;
+            querySettings.poolMonth = null;
+          }}
+          items={[{ name: "All", value: null }, ...availablePoolYears.map((a) => ({ name: a, value: a }))]}
+          size="sm"
+          bind:value={querySettings.poolYear}
+        />
+      </div>
 
-    <div class="flex-grow">
-      <Label class="block mb-0.5">Pool year</Label>
-      <Select
-        on:change={() => {
-          querySettings.page = 1;
-          querySettings.poolMonth = null;
-        }}
-        items={[{ name: "All", value: null }, ...availablePoolYears.map((a) => ({ name: a, value: a }))]}
-        size="sm"
-        bind:value={querySettings.poolYear}
-      />
+      <div class="flex-grow">
+        <Label class="block mb-0.5">Pool month</Label>
+        <Select
+          items={[
+            { name: "All", value: null },
+            ...(availablePoolMonthsPerYear[querySettings.poolYear] ?? []).map((a) => ({ name: a, value: a })),
+          ]}
+          size="sm"
+          bind:value={querySettings.poolMonth}
+          disabled={querySettings.poolYear == null}
+        />
+      </div>
     </div>
-
-    <div class="flex-grow">
-      <Label class="block mb-0.5">Pool month</Label>
-      <Select
-        items={[
-          { name: "All", value: null },
-          ...(availablePoolMonthsPerYear[querySettings.poolYear] ?? []).map((a) => ({ name: a, value: a })),
-        ]}
-        size="sm"
-        bind:value={querySettings.poolMonth}
-        disabled={querySettings.poolYear == null}
-      />
-    </div>
-  </div>
+  {/if}
 
   <!-- ################################################# -->
 

@@ -23,11 +23,15 @@ export function getRedirectUri(clientId: string) {
 }
 
 export interface UserSession {
-  id: number;
-  login: string;
-  campusId: number;
-  isStaff: boolean;
+  id: number
+  login: string
+  campusId: number
+  isPool: boolean
+  poolYear: string,
+  poolMonth: string,
+  isStaff: boolean
 }
+
 export const userSession = writable<UserSession | null>(null);
 export const userError = writable<any | null>(null);
 

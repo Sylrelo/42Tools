@@ -41,38 +41,42 @@
   </div>
 
   <NavUl>
-    <NavLink url="/" label="Stats" />
-    <NavLink url="/calculator" label="Calculator" />
 
-    {#if [1, 9, 41].includes($userSession?.campusId ?? 0)}
-      <NavLi id="dropdown-rncp" class="cursor-pointer">RNCP</NavLi>
-      <Dropdown triggeredBy="#dropdown-rncp" trigger="hover" placement="bottom">
-        <DropdownItem
-          href="#"
-          on:click={(e) => {
-            navigate("/rncp-progress");
-            e.preventDefault();
-          }}
-        >
-          My RNCP
-        </DropdownItem>
+    {#if $userSession?.isPool !== true}
+      <NavLink url="/" label="Stats" />
+      <NavLink url="/calculator" label="Calculator" />
 
-        <DropdownItem
-          href="#"
-          on:click={(e) => {
-            navigate("/rncp-search");
-            e.preventDefault();
-          }}
-        >
-          Search
-        </DropdownItem>
-      </Dropdown>
+      {#if [1, 9, 41].includes($userSession?.campusId ?? 0)}
+        <NavLi id="dropdown-rncp" class="cursor-pointer">RNCP</NavLi>
+        <Dropdown triggeredBy="#dropdown-rncp" trigger="hover" placement="bottom">
+          <DropdownItem
+            href="#"
+            on:click={(e) => {
+              navigate("/rncp-progress");
+              e.preventDefault();
+            }}
+          >
+            My RNCP
+          </DropdownItem>
+
+          <DropdownItem
+            href="#"
+            on:click={(e) => {
+              navigate("/rncp-search");
+              e.preventDefault();
+            }}
+          >
+            Search
+          </DropdownItem>
+        </Dropdown>
+      {/if}
+
+
+      {#if $userSession?.campusId === 9}
+        <NavLink url="/calendar" label="Calendar" />
+      {/if}
     {/if}
 
-
-    {#if $userSession?.campusId === 9}
-      <NavLink url="/calendar" label="Calendar" />
-    {/if}
     <NavLink url="/server-infos" label="About" />
   </NavUl>
 </Navbar>
