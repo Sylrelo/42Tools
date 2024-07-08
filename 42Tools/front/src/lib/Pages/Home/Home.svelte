@@ -2,7 +2,7 @@
   import { Alert, Avatar, Badge, Card, Label, Select } from "flowbite-svelte";
   import { onMount } from "svelte";
   import { Link } from "svelte-routing";
-  import { httpGet } from "../../../services/http";
+  import { httpGet, userSession } from "../../../services/http";
   import Paginator from "../../Paginator.svelte";
   import RecentlyValidatedProjects from "./RecentlyValidatedProjects.svelte";
   import UserConnectionChart from "./UserConnectionChart.svelte";
@@ -61,6 +61,12 @@
   };
 
   onMount(async () => {
+    const activeCursus = $userSession?.cursuses.find((c) => c.isActive);
+
+    if (activeCursus?.cursus?.id) {
+      querySettings.cursusId = activeCursus.cursus.id;
+    }
+
     const availablePools: AvailablePools[] = await httpGet("/users/available-pools");
     campusList = await httpGet("/campus");
     cursusList = await httpGet("/cursus");

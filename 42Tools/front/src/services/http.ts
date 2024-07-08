@@ -1,3 +1,4 @@
+import type { CursusUser } from "@back/src/modules/base/entities/cursus-users";
 import { writable } from "svelte/store";
 
 export const LSK_CLIENTID_LOGIN = "_tmpClientIdFor42Auth";
@@ -27,7 +28,9 @@ export interface UserSession {
   login: string;
   campusId: number;
   isStaff: boolean;
+  cursuses: CursusUser[]
 }
+
 export const userSession = writable<UserSession | null>(null);
 export const userError = writable<any | null>(null);
 

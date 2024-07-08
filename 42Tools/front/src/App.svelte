@@ -15,7 +15,7 @@
   import Rncp from "./lib/Pages/RNCP/RNCP.svelte";
   import RncpSearch from "./lib/Pages/RNCP/RncpSearch.svelte";
   import ServerInfos from "./lib/Pages/ServerInfos.svelte";
-  import { userError, userSession } from "./services/http";
+  import { httpGet, userError, userSession } from "./services/http";
 
   import "@tabler/icons-webfont/dist/tabler-icons.min.css";
   import EditRncp from "./lib/Pages/RNCP/Admin/EditRNCP.svelte";
@@ -31,7 +31,9 @@
       if (sessionToken) {
         const tokenData = JSON.parse(atob(sessionToken.split(".")[1]));
 
-        userSession.set(tokenData);
+        const userData = await httpGet("/users/me");
+
+        userSession.set(userData ?? tokenData);
         userError.set(null);
       } else {
         userSession.set(null);
@@ -91,7 +93,7 @@
               on:click={() => {
                 userError.set(false);
                 userSession.set(null);
-                window.location.replace("/")
+                window.location.replace("/");
               }}
             >
               Retry
