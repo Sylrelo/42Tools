@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression, SchedulerRegistry, Timeout } from '@nestjs/schedule';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { InjectDataSource } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { DataSource } from 'typeorm';
@@ -8,7 +8,6 @@ import { RncpProgressService } from './modules/rncp-progress/rncp-progress.servi
 import { UserLocationService } from './modules/user-locations/user-location.service';
 import { UserService } from './modules/users/users.service';
 import { ApiQueue } from './services/api-queue';
-import { IProjectSession } from './Interfaces/42';
 
 @Injectable()
 export class AppService {

@@ -7,8 +7,11 @@ import dayjs from "dayjs";
 
 @Entity({ name: "cursus_users" })
 export class CursusUser {
-    @PrimaryColumn()
+    @PrimaryColumn({ generated: true })
     id: number
+
+    @Column({ nullable: true })
+    apiId: number
 
     @Column({ nullable: true })
     grade: string
@@ -34,7 +37,7 @@ export class CursusUser {
     static FromApi(input: ICursusUser) {
         const entity = new CursusUser();
 
-        entity.id = input.id;
+        entity.apiId = input.id;
 
         entity.grade = input.grade;
 
@@ -49,7 +52,7 @@ export class CursusUser {
         entity.cursus = Cursus.FromApi(input.cursus);
 
         if (
-            input.begin_at != null && dayjs(input.begin_at).isBefore(undefined) 
+            input.begin_at != null && dayjs(input.begin_at).isBefore(undefined)
             && (input.end_at == null || (input.end_at != null && dayjs(input.end_at).isAfter(undefined)))
         ) {
             entity.isActive = true;

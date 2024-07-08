@@ -7,6 +7,7 @@ import { CampusController } from "./controllers/campus.controller";
 import { Cursus } from "./entities/cursus";
 import { CursusUser } from "./entities/cursus-users";
 import { CursusUserService } from "./services/cursus-users.service";
+import { CursusController } from "./controllers/cursus.controller";
 
 @Module({
 
@@ -29,6 +30,7 @@ import { CursusUserService } from "./services/cursus-users.service";
 
     controllers: [
         CampusController,
+        CursusController
     ],
 
     exports: [

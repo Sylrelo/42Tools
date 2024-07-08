@@ -38,7 +38,7 @@ export class UserService {
     private readonly configService: ConfigService,
     private readonly rncpProgressService: RncpProgressService,
     private readonly cursusUserService: CursusUserService,
-  ) {}
+  ) { }
 
   /* -------------------------------------------------------------------------- */
   /*                                    STATS                                   */
@@ -117,7 +117,7 @@ export class UserService {
         login: Not(Like('3b3-%')),
       },
       order: {
-        lastSeenAt: {nulls: "LAST", direction: 'ASC'},
+        lastSeenAt: { nulls: "LAST", direction: 'ASC' },
       },
       take: limit,
     });
@@ -193,7 +193,7 @@ export class UserService {
 
     await this.repo.update({ id: studentId }, user);
     await this.cursusUserService.updateCursusUserFromApi(studentData.cursus_users);
-    
+
     await this.updateCachedRncpProgress(studentId);
   }
 
@@ -343,11 +343,10 @@ export class UserService {
     return this.projectUserSerivce.getValidatedRncpProject(projectIds);
   }
 
-  @Timeout(400)
   async getAllStats(options: any) {
     if (options == null) {
       options = {
-        cursusId: 21,
+        cursus: 21,
       };
       options.page = 1;
       options.order = 'DESC';
@@ -355,7 +354,7 @@ export class UserService {
 
     try {
       const START = Date.now();
-
+      const LEVEL_COND = "(CASE WHEN cu.level IS NULL THEN user.level ELSE cu.level END)";
       // const CURSUS_OBJ = `JSON_BUILD_OBJECT(
       //   'id', cu.id,
       //   'level', cu.level,
@@ -377,20 +376,20 @@ export class UserService {
       //   .groupBy('cu.user_id')
       //   .where('cu.user_id = user.id')
       //   ;
-      
+
 
       const queryBuilder = this.repo
         .createQueryBuilder('user')
         .leftJoin(
-          'user.projectUser', 
-          'pu', 
+          'user.projectUser',
+          'pu',
           "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0"
         )
-        .leftJoin(
-          "user.cursuses", 
-          "cu", 
-          "cu.user_id = user.id AND cu.cursus_id = :cursusId", 
-          { cursusId: options.cursusId }
+        .innerJoin(
+          "user.cursuses",
+          "cu",
+          "cu.user_id = user.id AND cu.cursus_id = :cursus",
+          { cursus: options.cursus }
         )
         .select([
           'user.id',
@@ -402,7 +401,7 @@ export class UserService {
           'user.campusId',
           'user.lastUpdatedAt',
           // 'user.level',
-          '(CASE WHEN cu.level IS NULL THEN user.level ELSE cu.level END) as user_level',
+          `cu.level as user_level`,
           'user.wallet',
           'user.correctionPoint',
           // '('+ subqueryCursusUsers.getQuery() +') as cursuses',
@@ -427,7 +426,8 @@ export class UserService {
       let order = options.order ?? 'DESC';
 
       if (options.sort === 'level') {
-        queryBuilder.orderBy('user_level', order);
+        // queryBuilder.orderBy(LEVEL_COND, order);
+        queryBuilder.orderBy("cu.level", order);
       } else if (options.sort === 'wallet') {
         queryBuilder.orderBy('user.wallet', order);
       } else if (options.sort === 'poolLevel') {
@@ -437,7 +437,8 @@ export class UserService {
       } else if (options.sort === 'projects') {
         queryBuilder.orderBy(`user_validated_projects`, order);
       } else {
-        queryBuilder.orderBy('user.level', order);
+        // queryBuilder.orderBy("LEVEL_COND", order);
+        queryBuilder.orderBy("cu.level", order);
       }
 
       queryBuilder.andWhere("user.login NOT LIKE('3b3-%')");
@@ -503,7 +504,7 @@ export class UserService {
         clientId,
       });
 
-      const loginResponse : IUser = result?.data ?? result;
+      const loginResponse: IUser = result?.data ?? result;
 
       const user = Users.FromUserApi(loginResponse);
       user.lastUpdatedAt = new Date();
@@ -516,7 +517,7 @@ export class UserService {
       });
 
       await this.cursusUserService.updateCursusUserFromApi(loginResponse.cursus_users);
-      
+
       try {
         await this.projectUserSerivce.batchInsert(new Users(loginResponse.id), loginResponse.projects_users);
       } catch (error) {
@@ -536,9 +537,9 @@ export class UserService {
       }
 
       // Should not happens
-//      if (user.blackholeDate != null && dayjs().isAfter(user.blackholeDate)) {
-//        throw new ForbiddenException("You've been blackholed. You can't access API resources anymore.");
-//      }
+      //      if (user.blackholeDate != null && dayjs().isAfter(user.blackholeDate)) {
+      //        throw new ForbiddenException("You've been blackholed. You can't access API resources anymore.");
+      //      }
 
       const userData = {
         id: loginResponse.id,
