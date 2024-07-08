@@ -72,9 +72,10 @@ async function httpRequest(method: string, endpoint: string, data?: any) {
     if (contentType.includes("application/json")) return await response.json();
     else return await response.text();
   } catch (error: any) {
-    // userSession.set(null);
-    // userError.set(error?.message);
-    // window.localStorage.clear();
+    //TODO : CHange
+    userSession.set(null);
+    userError.set(error?.message);
+    window.localStorage.clear();
     throw new Error(error?.message);
   }
 }
