@@ -11,6 +11,21 @@
   import type { Cursus } from "@back/src/modules/base/entities/cursus";
   // import { Campus } from "@back/src/modules/base/entities/campus";
 
+  const MONTHNAME_ORDER = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
+
   interface UserStat {
     index: number;
     user_id: number;
@@ -99,7 +114,9 @@
 
     for (const year in tmpMonthYear) {
       tmpMonthYear[year] = Array.from(tmpMonthYear[year]);
-      tmpMonthYear[year] = tmpMonthYear[year].sort();
+      tmpMonthYear[year] = tmpMonthYear[year].sort(
+        (a: string, b: string) => MONTHNAME_ORDER.findIndex((v) => v === a) - MONTHNAME_ORDER.findIndex((v) => v === b),
+      );
     }
 
     availablePoolYears = Array.from(tmpYearSet) as number[];
