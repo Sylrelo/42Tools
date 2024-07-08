@@ -153,6 +153,7 @@ export class UsersController {
       select: [
         'id',
         'level',
+        'campusId',
         'lastUpdatedAt',
         'lastCachedProgressUpdatedAt',
         'cursuses'
