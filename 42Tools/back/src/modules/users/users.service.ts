@@ -13,6 +13,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RncpProgressService } from '../rncp-progress/rncp-progress.service';
 import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
+import { CursusUserService } from '../base/services/cursus-users.service';
+import { CursusUser } from '../base/entities/cursus-users';
 
 export const CURSUS_ID = 21; // 42cursus
 export const CAMPUS_ID = 9;
@@ -25,13 +27,18 @@ export class UserService {
   constructor(
     @InjectRepository(Users)
     private repo: Repository<Users>,
+
+    @InjectRepository(CursusUser)
+    private repoCursusUser: Repository<CursusUser>,
+
     private readonly apiQueue: ApiQueue,
     private readonly projectUserSerivce: ProjectUserService,
     private readonly rncpService: RncpDefinitionService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly rncpProgressService: RncpProgressService,
-  ) {}
+    private readonly cursusUserService: CursusUserService,
+  ) { }
 
   /* -------------------------------------------------------------------------- */
   /*                                    STATS                                   */
@@ -110,7 +117,7 @@ export class UserService {
         login: Not(Like('3b3-%')),
       },
       order: {
-        lastSeenAt: {nulls: "LAST", direction: 'ASC'},
+        lastSeenAt: { nulls: "LAST", direction: 'ASC' },
       },
       take: limit,
     });
@@ -185,6 +192,8 @@ export class UserService {
     user.lastUpdatedAt = new Date();
 
     await this.repo.update({ id: studentId }, user);
+    await this.cursusUserService.updateCursusUserFromApi(studentData.cursus_users);
+
     await this.updateCachedRncpProgress(studentId);
   }
 
@@ -336,18 +345,52 @@ export class UserService {
 
   async getAllStats(options: any) {
     if (options == null) {
-      options = {};
+      options = {
+        cursus: 21,
+      };
       options.page = 1;
       options.order = 'DESC';
     }
 
     try {
       const START = Date.now();
+      const LEVEL_COND = "(CASE WHEN cu.level IS NULL THEN user.level ELSE cu.level END)";
+      // const CURSUS_OBJ = `JSON_BUILD_OBJECT(
+      //   'id', cu.id,
+      //   'level', cu.level,
+      //   'isActive', cu.is_active,
+      //   'beginAt', cu.begin_at,
+      //   'endAt', cu.end_at
+      // )`;
+
+      // const subqueryCursusUsers = this.repoCursusUser
+      //   .createQueryBuilder('cu')
+      //   .select([
+      //     `ARRAY_AGG(
+      //       JSON_BUILD_OBJECT(
+      //         'cursus_id', cu.cursus_id,
+      //         'level', cu.level
+      //       )
+      //     )`
+      //   ])
+      //   .groupBy('cu.user_id')
+      //   .where('cu.user_id = user.id')
+      //   ;
+
 
       const queryBuilder = this.repo
         .createQueryBuilder('user')
-        .leftJoin('user.projectUser', 'pu', "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0")
-        // .leftJoin("user.eventUser", "eu", "eu.user_id = user.id")
+        .leftJoin(
+          'user.projectUser',
+          'pu',
+          "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0"
+        )
+        .innerJoin(
+          "user.cursuses",
+          "cu",
+          "cu.user_id = user.id AND cu.cursus_id = :cursus",
+          { cursus: options.cursus }
+        )
         .select([
           'user.id',
           'user.login',
@@ -357,11 +400,15 @@ export class UserService {
           'user.poolLevel',
           'user.campusId',
           'user.lastUpdatedAt',
-          'user.level',
+          // 'user.level',
+          `cu.level as user_level`,
           'user.wallet',
           'user.correctionPoint',
+          // '('+ subqueryCursusUsers.getQuery() +') as cursuses',
+          // 'ARRAY_AGG(cu.cursuses) filter(where cu.cursuses <> \'{}\') as cursuses',
+          // 'COALESCE(ARRAY_AGG(cu.cursuses), ARRAY[]::json[]) as cursuses',
+          // 'ARRAY_AGG(CASE WHEN cu.cursuses IS NULL THEN ARRAY[]::json[] ELSE (cu.cursuses) END) as cursuses',
           'COUNT(pu.user_id) as user_validated_projects',
-          // "SUM(eu.user_id) as user_events"
         ])
         .groupBy('user.id')
         .addGroupBy('user.login')
@@ -372,14 +419,15 @@ export class UserService {
         .addGroupBy('user.campusId')
         .addGroupBy('user.poolYear')
         .addGroupBy('user.lastUpdatedAt')
-        .addGroupBy('user.level')
+        .addGroupBy('cu.level')
         .addGroupBy('user.wallet')
         .addGroupBy('user.correctionPoint')
         .cache(true, 60000);
       let order = options.order ?? 'DESC';
 
       if (options.sort === 'level') {
-        queryBuilder.orderBy('user.level', order);
+        // queryBuilder.orderBy(LEVEL_COND, order);
+        queryBuilder.orderBy("cu.level", order);
       } else if (options.sort === 'wallet') {
         queryBuilder.orderBy('user.wallet', order);
       } else if (options.sort === 'poolLevel') {
@@ -389,7 +437,8 @@ export class UserService {
       } else if (options.sort === 'projects') {
         queryBuilder.orderBy(`user_validated_projects`, order);
       } else {
-        queryBuilder.orderBy('user.level', order);
+        // queryBuilder.orderBy("LEVEL_COND", order);
+        queryBuilder.orderBy("cu.level", order);
       }
 
       queryBuilder.andWhere("user.login NOT LIKE('3b3-%')");
@@ -455,7 +504,7 @@ export class UserService {
         clientId,
       });
 
-      const loginResponse : IUser = result?.data ?? result;
+      const loginResponse: IUser = result?.data ?? result;
 
       const user = Users.FromUserApi(loginResponse);
       user.lastUpdatedAt = new Date();
@@ -467,6 +516,7 @@ export class UserService {
         },
       });
 
+      await this.cursusUserService.updateCursusUserFromApi(loginResponse.cursus_users);
 
       try {
         await this.projectUserSerivce.batchInsert(new Users(loginResponse.id), loginResponse.projects_users);
@@ -487,9 +537,9 @@ export class UserService {
       }
 
       // Should not happens
-//      if (user.blackholeDate != null && dayjs().isAfter(user.blackholeDate)) {
-//        throw new ForbiddenException("You've been blackholed. You can't access API resources anymore.");
-//      }
+      //      if (user.blackholeDate != null && dayjs().isAfter(user.blackholeDate)) {
+      //        throw new ForbiddenException("You've been blackholed. You can't access API resources anymore.");
+      //      }
 
       const userData = {
         id: loginResponse.id,

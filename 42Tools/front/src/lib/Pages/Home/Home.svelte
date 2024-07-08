@@ -1,27 +1,14 @@
 <script lang="ts">
-  import dayjs from "dayjs";
-  import {
-    Alert,
-    Avatar,
-    Badge,
-    Card,
-    Label,
-    Select,
-    Table,
-    TableBody,
-    TableBodyCell,
-    TableBodyRow,
-    TableHead,
-    TableHeadCell,
-  } from "flowbite-svelte";
+  import { Alert, Avatar, Badge, Card, Label, Select } from "flowbite-svelte";
   import { onMount } from "svelte";
   import { Link } from "svelte-routing";
-  import { httpGet } from "../../../services/http";
+  import { httpGet, userSession } from "../../../services/http";
   import Paginator from "../../Paginator.svelte";
+  import RecentlyValidatedProjects from "./RecentlyValidatedProjects.svelte";
   import UserConnectionChart from "./UserConnectionChart.svelte";
   import UserOverLevel21Card from "./UserOverLevel21Card.svelte";
   import UserValidationTranscendence from "./UserValidationTranscendence.svelte";
-  import RecentlyValidatedProjects from "./RecentlyValidatedProjects.svelte";
+  import type { Cursus } from "@back/src/modules/base/entities/cursus";
   // import { Campus } from "@back/src/modules/base/entities/campus";
 
   interface UserStat {
@@ -48,6 +35,7 @@
 
   // let availablePools: AvailablePools[] = [];
 
+  let cursusList: Cursus[] = [];
   let campusList: any[] = [];
 
   let availablePoolYears: number[] = [];
@@ -61,6 +49,7 @@
   let isLoadinguserStats = true;
 
   let oldSortKey = "";
+
   let querySettings: Record<string, any> = {
     key: "level",
     order: true,
@@ -68,11 +57,34 @@
     poolYear: null,
     poolMonth: null,
     campusId: null,
+    cursusId: 21,
   };
 
   onMount(async () => {
+    const activeCursus = $userSession?.cursuses.find((c) => c.isActive);
+
+    if (activeCursus?.cursus?.id) {
+      querySettings.cursusId = activeCursus.cursus.id;
+    }
+
     const availablePools: AvailablePools[] = await httpGet("/users/available-pools");
     campusList = await httpGet("/campus");
+    cursusList = await httpGet("/cursus");
+
+    cursusList = cursusList.sort((a, b) => {
+      const aIsDeprecated = a.kind.includes("deprecated");
+      const bIsDeprecated = b.kind.includes("deprecated");
+
+      if (aIsDeprecated && !bIsDeprecated) return 1;
+      if (!aIsDeprecated && bIsDeprecated) return -1;
+
+      if (a.name < b.name) return -1;
+      if (a.name > b.name) return 1;
+
+      console.log("3303", a, b);
+
+      return 0;
+    });
 
     const tmpYearSet = new Set();
     const tmpMonthYear: any = {};
@@ -117,6 +129,7 @@
       q.append("page", querySettings.page.toString());
 
       if (querySettings.campusId) q.append("campus", querySettings.campusId);
+      if (querySettings.cursusId) q.append("cursus", querySettings.cursusId);
 
       if (querySettings.poolYear !== null) q.append("poolYear", querySettings.poolYear);
       else {
@@ -146,11 +159,6 @@
   <Alert class="mb-4" color="yellow">
     <h5 class="text-xl font-bold mb-1">Informations</h5>
     <p class="text-md">This is still a work-in-progress, more stats will come.</p>
-    <p class="text-md">
-      At the time being, the data are still being fetched, check <Link to="/server-infos" class="underline"
-        >about page</Link
-      > for progression status.
-    </p>
   </Alert>
 
   <!-- ################################################# -->
@@ -167,7 +175,7 @@
 
   <!-- ################################################# -->
 
-  <div class="grid lg:grid-cols-3 gap-3">
+  <div class="grid lg:grid-cols-4 gap-3">
     <div class="flex-grow">
       <Label class="block mb-0.5">Campus</Label>
       <Select
@@ -175,6 +183,16 @@
         size="sm"
         class="w-full"
         bind:value={querySettings.campusId}
+      />
+    </div>
+
+    <div class="flex-grow">
+      <Label class="block mb-0.5">Cursus</Label>
+      <Select
+        items={cursusList.map((c) => ({ name: `${c.name} (${c.kind})`, value: c.id }))}
+        size="sm"
+        class="w-full"
+        bind:value={querySettings.cursusId}
       />
     </div>
 
@@ -209,8 +227,18 @@
 
   <div>
     <div class="mb-5 mt-4">
-      Your position with the currently selected filter/sort: <span class="font-bold">{selfPosition ?? "--"}</span> / {userCount.toLocaleString()}
-      (page {Math.ceil(selfPosition / 20)})
+      Your position with the currently selected filter/sort:
+      <span class="font-bold">{selfPosition ?? "--"}</span> / {userCount.toLocaleString()}
+      (<a
+        href="##"
+        title="Jump to page"
+        class="underline hover:text-gray-400"
+        on:click={() => {
+          querySettings.page = Math.ceil(selfPosition / 20);
+        }}
+      >
+        page {Math.ceil(selfPosition ?? 0 / 20)}</a
+      >)
     </div>
 
     <!-- ################################################# -->

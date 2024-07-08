@@ -1,3 +1,4 @@
+import type { CursusUser } from "@back/src/modules/base/entities/cursus-users";
 import { writable } from "svelte/store";
 
 export const LSK_CLIENTID_LOGIN = "_tmpClientIdFor42Auth";
@@ -27,7 +28,9 @@ export interface UserSession {
   login: string;
   campusId: number;
   isStaff: boolean;
+  cursuses: CursusUser[]
 }
+
 export const userSession = writable<UserSession | null>(null);
 export const userError = writable<any | null>(null);
 
@@ -69,6 +72,7 @@ async function httpRequest(method: string, endpoint: string, data?: any) {
     if (contentType.includes("application/json")) return await response.json();
     else return await response.text();
   } catch (error: any) {
+    //TODO : CHange
     userSession.set(null);
     userError.set(error?.message);
     window.localStorage.clear();

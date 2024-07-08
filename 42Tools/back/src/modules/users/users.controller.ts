@@ -23,7 +23,7 @@ export class UsersController {
 
     @InjectRepository(Users)
     private readonly userRepository: Repository<Users>,
-  ) {}
+  ) { }
 
   @Get('available-pools')
   async getAvailablePools() {
@@ -45,6 +45,7 @@ export class UsersController {
     @Query('poolMonth') poolMonth?: string,
     @Query('poolYear') poolYear?: string,
     @Query('campus') campus?: number,
+    @Query('cursus') cursus?: number,
   ) {
     return this.userService.getAllStats({
       sort,
@@ -53,6 +54,7 @@ export class UsersController {
       poolMonth,
       poolYear,
       campus,
+      cursus,
       selfUserId: request.user?.id,
     });
   }
@@ -138,12 +140,23 @@ export class UsersController {
   }
 
   @Get('/:id')
-  async getUser( @Param('id') id: number) {
+  async getUser(@Param('id') id: number) {
     return await this.userRepository.findOne({
       where: {
         id: id,
       },
-      select: ['id', 'level', 'lastUpdatedAt', 'lastCachedProgressUpdatedAt'],
+      relations: {
+        cursuses: {
+          cursus: true
+        }
+      },
+      select: [
+        'id',
+        'level',
+        'lastUpdatedAt',
+        'lastCachedProgressUpdatedAt',
+        'cursuses'
+      ],
     });
   }
 

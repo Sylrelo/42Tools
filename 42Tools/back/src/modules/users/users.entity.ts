@@ -5,6 +5,7 @@ import { IUser } from 'src/Interfaces/42';
 import { EventUser } from '../events/event-user.entity';
 import { CachedRncpProgress } from '../rncp-progress/rncp-progress.entity';
 import { UserLocation } from '../user-locations/user-location.entity';
+import { CursusUser } from '../base/entities/cursus-users';
 
 @Entity({ name: 'users' })
 export class Users {
@@ -26,6 +27,8 @@ export class Users {
   @Column({ nullable: true })
   poolMonth: string;
 
+
+  /** @deprecated for CursusUser relation */
   @Column({ nullable: true, type: 'float' })
   poolLevel: number;
 
@@ -47,6 +50,7 @@ export class Users {
   @Column({ nullable: true, type: 'timestamp' })
   lastCachedProgressUpdatedAt?: Date | string | number;
 
+  /** @deprecated for CursusUser relation */
   @Column({ default: 0, type: 'float' })
   @Index()
   level: number;
@@ -82,6 +86,9 @@ export class Users {
 
   @OneToMany(() => UserLocation, (userLocaion) => userLocaion.user)
   userLocations: UserLocation[];
+
+  @OneToMany(() => CursusUser, (cursusUser) => cursusUser.user)
+  cursuses: CursusUser[]
 
   @Column({ default: false })
   ignoreFutureUpdate: boolean;

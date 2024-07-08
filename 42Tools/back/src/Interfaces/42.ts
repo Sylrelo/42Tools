@@ -241,9 +241,6 @@ export interface IEndpoint {
     updated_at: string
 }
 
-
-
-
 export interface ICursusUser {
     grade: string
     level: number

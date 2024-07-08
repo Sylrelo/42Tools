@@ -6,3 +6,12 @@ export async function sleep(time: number): Promise<void> {
         }, time);
     })
 }
+
+export function DateForDb(inputDate?: Date | string | number) {
+    if (inputDate == null) {
+        return null;
+    }
+
+    //TODO
+    return inputDate;
+}
