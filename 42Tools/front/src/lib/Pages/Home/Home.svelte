@@ -153,11 +153,6 @@
   <Alert class="mb-4" color="yellow">
     <h5 class="text-xl font-bold mb-1">Informations</h5>
     <p class="text-md">This is still a work-in-progress, more stats will come.</p>
-    <p class="text-md">
-      At the time being, the data are still being fetched, check <Link to="/server-infos" class="underline"
-        >about page</Link
-      > for progression status.
-    </p>
   </Alert>
 
   <!-- ################################################# -->
@@ -226,8 +221,18 @@
 
   <div>
     <div class="mb-5 mt-4">
-      Your position with the currently selected filter/sort: <span class="font-bold">{selfPosition ?? "--"}</span> / {userCount.toLocaleString()}
-      (page {Math.ceil(selfPosition / 20)})
+      Your position with the currently selected filter/sort:
+      <span class="font-bold">{selfPosition ?? "--"}</span> / {userCount.toLocaleString()}
+      (<a
+        href="##"
+        title="Jump to page"
+        class="underline hover:text-gray-400"
+        on:click={() => {
+          querySettings.page = Math.ceil(selfPosition / 20);
+        }}
+      >
+        page {Math.ceil(selfPosition ?? 0 / 20)}</a
+      >)
     </div>
 
     <!-- ################################################# -->
