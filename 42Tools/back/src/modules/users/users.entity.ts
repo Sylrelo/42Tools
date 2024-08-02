@@ -105,7 +105,11 @@ export class Users {
   primaryCursusLevel: number = -1;
 
   @AfterLoad()
-  calculate() {
+  getPrimaryCursusLevel() {
+    if (this.cursuses == null) {
+      return;
+    }
+
     const activeCursuses = this.cursuses.filter((cursus) => cursus.end_at == null && cursus.isActive === true);
     activeCursuses.sort((a, b) => dayjs(b.begin_at).diff(a.begin_at));
 
