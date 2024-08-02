@@ -390,6 +390,7 @@ export class UserService {
           'user.poolLevel',
           'user.campusId',
           'user.lastUpdatedAt',
+          'user.isAlumni',
           // 'user.level',
           `cu.level as user_level`,
           'user.wallet',
@@ -412,6 +413,7 @@ export class UserService {
         .addGroupBy('cu.level')
         .addGroupBy('user.wallet')
         .addGroupBy('user.correctionPoint')
+        .addGroupBy('user.isAlumni')
         .cache(true, 60000);
       let order = options.order ?? 'DESC';
 

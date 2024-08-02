@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Alert, Avatar, Badge, Card, Label, Select } from "flowbite-svelte";
   import { onMount } from "svelte";
-  import { Link } from "svelte-routing";
   import { httpGet, userSession } from "../../../services/http";
   import Paginator from "../../Paginator.svelte";
   import RecentlyValidatedProjects from "./RecentlyValidatedProjects.svelte";
@@ -9,7 +8,6 @@
   import UserOverLevel21Card from "./UserOverLevel21Card.svelte";
   import UserValidationTranscendence from "./UserValidationTranscendence.svelte";
   import type { Cursus } from "@back/src/modules/base/entities/cursus";
-  // import { Campus } from "@back/src/modules/base/entities/campus";
 
   const MONTHNAME_ORDER = [
     "january",
@@ -41,6 +39,7 @@
     user_validated_projects: number;
     user_events: number;
     user_last_updated_at: string | null;
+    user_is_alumni: boolean;
   }
 
   interface AvailablePools {
@@ -312,6 +311,7 @@
       {#each userStats as user (user.user_login)}
         <div
           class="flex-grow flex gap-2 dark:bg-gray-800 bg-gray-200 rounded flex-col items-start lg:flex-row lg:items-center py-3"
+          class:opacity-90={user.user_is_alumni}
         >
           <div class="flex items-center gap-2 w-full">
             <div class="w-12 text-center" class:text-xs={user.index + 1 > 10000}>
@@ -340,6 +340,10 @@
                       <Badge color="dark">
                         {campusList.find((c) => c.id === user.user_campus_id)?.name ?? `ID#${user?.user_campus_id}`}
                       </Badge>
+                    {/if}
+
+                    {#if user.user_is_alumni}
+                      <Badge color="dark">Alumni</Badge>
                     {/if}
                   </div>
                   <!-- <div class="flex gap-2">
