@@ -251,10 +251,10 @@
         title="Jump to page"
         class="underline hover:text-gray-400"
         on:click={() => {
-          querySettings.page = Math.ceil(selfPosition / 20);
+          querySettings.page = Math.ceil((selfPosition ?? 0) / 20);
         }}
       >
-        page {Math.ceil(selfPosition ?? 0 / 20)}</a
+        page {Math.ceil((selfPosition ?? 0) / 20)}</a
       >)
     </div>
 

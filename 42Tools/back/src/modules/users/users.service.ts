@@ -38,7 +38,7 @@ export class UserService {
     private readonly configService: ConfigService,
     private readonly rncpProgressService: RncpProgressService,
     private readonly cursusUserService: CursusUserService,
-  ) { }
+  ) {}
 
   /* -------------------------------------------------------------------------- */
   /*                                    STATS                                   */
@@ -117,7 +117,7 @@ export class UserService {
         login: Not(Like('3b3-%')),
       },
       order: {
-        lastSeenAt: { nulls: "LAST", direction: 'ASC' },
+        lastSeenAt: { nulls: 'LAST', direction: 'ASC' },
       },
       take: limit,
     });
@@ -354,7 +354,7 @@ export class UserService {
 
     try {
       const START = Date.now();
-      const LEVEL_COND = "(CASE WHEN cu.level IS NULL THEN user.level ELSE cu.level END)";
+      const LEVEL_COND = '(CASE WHEN cu.level IS NULL THEN user.level ELSE cu.level END)';
       // const CURSUS_OBJ = `JSON_BUILD_OBJECT(
       //   'id', cu.id,
       //   'level', cu.level,
@@ -377,20 +377,10 @@ export class UserService {
       //   .where('cu.user_id = user.id')
       //   ;
 
-
       const queryBuilder = this.repo
         .createQueryBuilder('user')
-        .leftJoin(
-          'user.projectUser',
-          'pu',
-          "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0"
-        )
-        .innerJoin(
-          "user.cursuses",
-          "cu",
-          "cu.user_id = user.id AND cu.cursus_id = :cursus",
-          { cursus: options.cursus }
-        )
+        .leftJoin('user.projectUser', 'pu', "pu.user_id = user.id AND pu.is_validated = 'true' AND pu.final_mark > 0")
+        .innerJoin('user.cursuses', 'cu', 'cu.user_id = user.id AND cu.cursus_id = :cursus', { cursus: options.cursus })
         .select([
           'user.id',
           'user.login',
@@ -427,7 +417,7 @@ export class UserService {
 
       if (options.sort === 'level') {
         // queryBuilder.orderBy(LEVEL_COND, order);
-        queryBuilder.orderBy("cu.level", order);
+        queryBuilder.orderBy('cu.level', order);
       } else if (options.sort === 'wallet') {
         queryBuilder.orderBy('user.wallet', order);
       } else if (options.sort === 'poolLevel') {
@@ -438,11 +428,11 @@ export class UserService {
         queryBuilder.orderBy(`user_validated_projects`, order);
       } else {
         // queryBuilder.orderBy("LEVEL_COND", order);
-        queryBuilder.orderBy("cu.level", order);
+        queryBuilder.orderBy('cu.level', order);
       }
 
       queryBuilder.andWhere("user.login NOT LIKE('3b3-%')");
-      queryBuilder.andWhere("user.login NOT IN('chmaubla')");
+      queryBuilder.andWhere("user.login NOT IN('chmaubla', 'utest')");
       queryBuilder.andWhere('user.is_staff = false');
 
       if (options.campus) {
@@ -567,21 +557,21 @@ export class UserService {
   }
 
   @Timeout(2500)
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { name: "AnonymizeJob", disabled: false })
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { name: 'AnonymizeJob', disabled: false })
   private async anonymizeUsers() {
     const users = await this.repo.update(
       {
         anonymizationDate: LessThan(dayjs().format()),
-        login: Not(Like("3b3-%"))
+        login: Not(Like('3b3-%')),
       },
       {
-        login: "3b3-Anonymized",
-        fullName: "Redacted",
-        email: "Redacted",
+        login: '3b3-Anonymized',
+        fullName: 'Redacted',
+        email: 'Redacted',
         profilePicture: null,
-      })
+      },
+    );
 
-    this.logger.log(`Anonymized ${users.affected} users.`)
+    this.logger.log(`Anonymized ${users.affected} users.`);
   }
 }
-
