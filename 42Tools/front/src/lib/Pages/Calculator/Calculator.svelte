@@ -6,11 +6,13 @@
   import { httpGet } from "../../../services/http";
   import Graph from "./Graph.svelte";
   import type { Projects } from "@back/src/modules/projects/projects.entity";
+  import type { Users } from "@back/src/modules/users/users.entity";
 
   interface SimulatedProject {
     uuid: string;
     project: Projects | null | undefined;
     mark: number;
+    customProjectExperience: number | undefined;
 
     internshipCalculationsData: {
       [key: string]: number;
@@ -41,7 +43,7 @@
 
   let enableCoalitionBonus = false;
 
-  let projects: any[] = []; // Import type from back
+  let projects: Projects[] = []; // Import type from back
   let graphData: any[] = []; // Type
 
   const defaultSimulatedProject: SimulatedProject = {
@@ -54,13 +56,14 @@
     uuid: crypto.randomUUID(),
     mark: 100,
     project: undefined,
+    customProjectExperience: undefined,
   };
 
   let simulationProjects: SimulatedProject[] = [{ ...defaultSimulatedProject }];
   let user: Partial<Users> = {};
 
-  let baseLevel = 0;
-  let baseXp = 0;
+  let baseLevel: number = 0;
+  let baseXp: number = 0;
 
   function estimatedLevel(currentXp: number) {
     for (let i = 0; i < xpPerLevel.length; i++) {
@@ -99,7 +102,7 @@
           sp.project.experience) /
         90000;
     } else {
-      gainedXp = sp.project.experience * (sp.mark / 100) ?? 0;
+      gainedXp = (sp.customProjectExperience ?? sp.project.experience) * (sp.mark / 100) ?? 0;
     }
 
     return Math.floor(gainedXp * (enableCoalitionBonus ? 1.042 : 1.0));
@@ -125,8 +128,14 @@
     user = await httpGet("/users/me");
     projects = await httpGet(`/projects?cursusId=21`);
 
-    baseLevel = user.level!;
-    baseXp = estimatedXp(user.level!);
+    baseLevel = user.primaryCursusLevel!;
+    baseXp = estimatedXp(user.primaryCursusLevel!);
+
+    projects.push({
+      experience: -1,
+      id: -1,
+      name: "Custom Entry",
+    } as Projects);
 
     // baseLevel = 15.29;
     // simulationProjects = [
@@ -186,14 +195,15 @@
     for (const sproject of simulationProjects) {
       sproject.mark = Math.max(0, Math.min(sproject.mark, 125));
 
+      if (sproject.customProjectExperience != null)
+        sproject.customProjectExperience = Math.max(0, Math.min(sproject.customProjectExperience, 1484070));
+
       for (const key in sproject.internshipCalculationsData) {
         if (key === "contractHours") continue;
 
         sproject.internshipCalculationsData[key] = Math.max(0, Math.min(sproject.internshipCalculationsData[key], 125));
       }
     }
-
-    console.log(" Update");
   }
 </script>
 
@@ -219,7 +229,8 @@
       class="px-6 py-2 "
       outline
       on:click={() => {
-        baseLevel = user.level;
+        //@ts-ignore
+        baseLevel = user.primaryCursusLevel;
 
         simulationProjects = [
           {
@@ -265,9 +276,13 @@
 
           <div class="flex-grow flex gap-2 items-center justify-between">
             <div class="w-32 flex-grow text-center">
-              <Badge color="dark" class="text-lg w-full">
-                + {calculateGainedXp(sproject).toLocaleString()} XP
-              </Badge>
+              {#if sproject.project?.id === -1}
+                <Input type="text" size="sm" bind:value={sproject.customProjectExperience} />
+              {:else}
+                <Badge color="dark" class="text-lg w-full">
+                  + {calculateGainedXp(sproject).toLocaleString()} XP
+                </Badge>
+              {/if}
             </div>
             <div class="w-24 flex-grow text-center">
               {#key baseLevel}
