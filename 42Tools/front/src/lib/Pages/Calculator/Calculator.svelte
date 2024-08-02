@@ -202,7 +202,7 @@
   }
 
   $: if ([baseLevel]) {
-    const estXp = estimatedXp(user.primaryCursusLevel!);
+    const estXp = estimatedXp(baseLevel);
     baseXp = estXp.gainedXp;
     xpNeededForNextLevel = estXp.experienceToNextLevel;
 
