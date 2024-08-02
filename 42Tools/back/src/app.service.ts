@@ -43,10 +43,10 @@ export class AppService {
       `Requests left ${requestLeftThisHour} of ${estimatedRequestLeft} that should be left (${requestRatio}). Adapting maxRequest for this job from ${maxRequests} to ${Math.floor(maxRequests * requestRatio)}`,
     );
 
-    if (process.env?.NODE_ENV === 'dev') {
-      this.logger.debug('Ignoring CronTask on DEV ENV');
-      return;
-    }
+    // if (process.env?.NODE_ENV === 'dev') {
+    //   this.logger.debug('Ignoring CronTask on DEV ENV');
+    //   return;
+    // }
 
     maxRequests = Math.max(0, Math.floor(maxRequests * requestRatio));
 
@@ -56,19 +56,19 @@ export class AppService {
       let requestsMade = 0;
       let remaining = maxRequests;
 
-      // EVENTS UPDATE
-      // Every 30 minutes after 19h and the weekend, otherwize every two minutes.
-      if (currentHour >= 19 || currentDay === 0 || currentDay === 6 ? currentMinute % 30 === 0 : currentMinute % 2 === 0) {
-        requestsMade = await this.eventUsersService.getLatestEventUser();
-        remaining = Math.max(0, remaining - requestsMade);
-      }
+      // // EVENTS UPDATE
+      // // Every 30 minutes after 19h and the weekend, otherwize every two minutes.
+      // if (currentHour >= 19 || currentDay === 0 || currentDay === 6 ? currentMinute % 30 === 0 : currentMinute % 2 === 0) {
+      //   requestsMade = await this.eventUsersService.getLatestEventUser();
+      //   remaining = Math.max(0, remaining - requestsMade);
+      // }
 
-      // LOCATIONS UPDATE
-      // Every two minutes.
-      if (currentMinute % 2 === 0) {
-        requestsMade = await this.userLocationService.getLatestInactiveLocations();
-        remaining = Math.max(0, remaining - requestsMade);
-      }
+      // // LOCATIONS UPDATE
+      // // Every two minutes.
+      // if (currentMinute % 2 === 0) {
+      //   requestsMade = await this.userLocationService.getLatestInactiveLocations();
+      //   remaining = Math.max(0, remaining - requestsMade);
+      // }
 
       // ACTIVE STUDENT UPDATE
       requestsMade = await this.userService.updateActiveStudent(remaining);

@@ -185,6 +185,12 @@
   </Alert>
 
   <!-- ################################################# -->
+  <div class="mb-5 lg:gap-3 gap-2 grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1">
+    <Card size="none" padding="xs"></Card>
+    <Card size="none" padding="xs"></Card>
+    <Card size="none" padding="xs"></Card>
+    <Card size="none" padding="xs"></Card>
+  </div>
 
   <div class="mb-5 lg:gap-3 gap-2 grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1">
     <UserConnectionChart />
