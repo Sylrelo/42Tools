@@ -64,6 +64,8 @@
 
   let baseLevel: number = 0;
   let baseXp: number = 0;
+  let xpNeededForNextLevel: number = 0;
+  let nextLevel: number = 0;
 
   function estimatedLevel(currentXp: number) {
     for (let i = 0; i < xpPerLevel.length; i++) {
@@ -86,7 +88,16 @@
 
     const experienceNeedNextLevel = xpPerLevel[intLevel + 1] - xpPerLevel[intLevel];
 
-    return xpLevel + experienceNeedNextLevel * fractLevel;
+    const gainedXp = xpLevel + experienceNeedNextLevel * fractLevel;
+    const experienceToNextLevel = experienceNeedNextLevel - fractLevel * experienceNeedNextLevel;
+    // console.log(">>>", experienceNeedNextLevel - fractLevel * experienceNeedNextLevel);
+
+    // return xpLevel + experienceNeedNextLevel * fractLevel;
+
+    return {
+      gainedXp,
+      experienceToNextLevel,
+    };
   }
 
   function calculateGainedXp(sp: SimulatedProject) {
@@ -129,7 +140,10 @@
     projects = await httpGet(`/projects?cursusId=21`);
 
     baseLevel = user.primaryCursusLevel!;
-    baseXp = estimatedXp(user.primaryCursusLevel!);
+
+    const estXp = estimatedXp(user.primaryCursusLevel!);
+    baseXp = estXp.gainedXp;
+    xpNeededForNextLevel = estXp.experienceToNextLevel;
 
     projects.push({
       experience: -1,
@@ -188,7 +202,11 @@
   }
 
   $: if ([baseLevel]) {
-    baseXp = estimatedXp(baseLevel);
+    const estXp = estimatedXp(user.primaryCursusLevel!);
+    baseXp = estXp.gainedXp;
+    xpNeededForNextLevel = estXp.experienceToNextLevel;
+
+    nextLevel = estimatedLevel(estXp.experienceToNextLevel + estXp.gainedXp) ?? 0;
   }
 
   $: if (simulationProjects) {
@@ -203,6 +221,14 @@
 
         sproject.internshipCalculationsData[key] = Math.max(0, Math.min(sproject.internshipCalculationsData[key], 125));
       }
+    }
+
+    const finalLevel = estimatedLevel(accumulateXpUntil(simulationProjects.length - 1));
+
+    if (finalLevel != null) {
+      const estXp = estimatedXp(finalLevel);
+      xpNeededForNextLevel = estXp.experienceToNextLevel;
+      nextLevel = estimatedLevel(estXp.experienceToNextLevel + estXp.gainedXp) ?? 0;
     }
   }
 </script>
@@ -219,6 +245,13 @@
     <div class="mb-1">Custom starting level</div>
     <Input size="sm" type="number" class="!text-lg" min={0} max={29} bind:value={baseLevel} />
   </div>
+</div>
+
+<h5 class="text-xl mb-4 mt-4">Infos</h5>
+<div>
+  <Badge class="text-lg" color="indigo">
+    {xpNeededForNextLevel.toLocaleString()} XP
+  </Badge> left for level <Badge class="text-lg" color="indigo">{nextLevel}</Badge>
 </div>
 
 <h5 class="text-xl mb-4 mt-8 flex items-end justify-between">
