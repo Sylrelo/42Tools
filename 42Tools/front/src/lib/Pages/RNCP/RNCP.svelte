@@ -112,10 +112,10 @@
 
   async function forceReupdate() {
     try {
-      await httpPost(`/users/force-reupdate/${(studentId ?? $userSession?.id)}`)
+      await httpPost(`/users/force-reupdate/${studentId ?? $userSession?.id}`);
       userInfos = await httpGet("/users/" + (studentId ?? $userSession?.id));
-    } catch(error){ 
-      console.error(error)
+    } catch (error) {
+      console.error(error);
     }
   }
 </script>
@@ -133,16 +133,15 @@
     <div>
       {#if userInfos?.lastUpdatedAt && dayjs(userInfos.lastUpdatedAt).diff(undefined, "day") <= -2}
         <Button color="purple" on:click={() => forceReupdate()}>Something wrong ? Trigger an update !</Button>
-        {:else if userInfos?.lastUpdatedAt == null}
-          Update queued, come back later.
-          {:else}
-          <div class="text-sm">
-            User Updated At : {dayjs(userInfos.lastUpdatedAt).format("DD/MM/YY HH[h]")}<br/>
-            RNCP Updated At : {dayjs(userInfos.lastCachedProgressUpdatedAt).format("DD/MM/YY HH[h]")}
-          </div>
-        {/if}
+      {:else if userInfos?.lastUpdatedAt == null}
+        Update queued, come back later.
+      {:else}
+        <div class="text-sm">
+          User Updated At : {dayjs(userInfos.lastUpdatedAt).format("DD/MM/YY HH[h]")}<br />
+          RNCP Updated At : {dayjs(userInfos.lastCachedProgressUpdatedAt).format("DD/MM/YY HH[h]")}
+        </div>
+      {/if}
     </div>
- 
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-4 md:grid-cols-2 gap-2 mb-5">
@@ -180,7 +179,13 @@
 
   <div class="mb-2 grid grid-cols-1 lg:grid-cols-3 gap-1">
     {#if isLoading === false && rncpDefinition[selectedRncpIndex]}
-      <GlobalRequierementCard {myGlobalProgress} {selectedRncpIndex} {rncpDefinition} title="Level" />
+      <GlobalRequierementCard
+        {myGlobalProgress}
+        {selectedRncpIndex}
+        {rncpDefinition}
+        realData={{ level: userInfos.level }}
+        title="Level"
+      />
       <GlobalRequierementCard {myGlobalProgress} {selectedRncpIndex} {rncpDefinition} title="Events" />
       <GlobalRequierementCard {myGlobalProgress} {selectedRncpIndex} {rncpDefinition} title="Experiences" />
     {:else}
@@ -198,9 +203,7 @@
 
   <div>
     <p class="text-lg dark:text-white mt-4 mb-2">Project progression</p>
-    <Alert class="mb-2" color="gray">
-      Tips : You can input a custom mark to simulate progression
-    </Alert>
+    <Alert class="mb-2" color="gray">Tips : You can input a custom mark to simulate progression</Alert>
 
     <div class="gap-2 grid grid-cols-1 md:grid-cols-2 lg:flex">
       {#if isLoading === false && rncpDefinition[selectedRncpIndex]}
