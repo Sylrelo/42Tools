@@ -254,7 +254,7 @@
                       </Badge>
 
                       <Badge color="green" class="w-24">
-                        {projects[cp.id].xp.ToLocaleString()} XP
+                        {projects[cp.id].xp.toLocaleString()} XP
                       </Badge>
                     {:else}
                       {#if customProjectsUser[cp.id]}
