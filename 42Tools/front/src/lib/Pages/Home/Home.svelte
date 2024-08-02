@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Alert, Avatar, Badge, Card, Label, Select } from "flowbite-svelte";
   import { onMount } from "svelte";
-  import { Link } from "svelte-routing";
   import { httpGet, userSession } from "../../../services/http";
   import Paginator from "../../Paginator.svelte";
   import RecentlyValidatedProjects from "./RecentlyValidatedProjects.svelte";
@@ -9,7 +8,6 @@
   import UserOverLevel21Card from "./UserOverLevel21Card.svelte";
   import UserValidationTranscendence from "./UserValidationTranscendence.svelte";
   import type { Cursus } from "@back/src/modules/base/entities/cursus";
-  // import { Campus } from "@back/src/modules/base/entities/campus";
 
   const MONTHNAME_ORDER = [
     "january",
@@ -41,6 +39,7 @@
     user_validated_projects: number;
     user_events: number;
     user_last_updated_at: string | null;
+    user_is_alumni: boolean;
   }
 
   interface AvailablePools {
@@ -61,7 +60,9 @@
   let timeTaken: number = 0;
   let selfPosition: number;
 
-  let isLoadinguserStats = true;
+  let isMetadataLoaded = false;
+
+  let isLoadingUserStats = true;
 
   let oldSortKey = "";
 
@@ -76,70 +77,77 @@
   };
 
   onMount(async () => {
-    const activeCursus = $userSession?.cursuses.find((c) => c.isActive);
+    isMetadataLoaded = false;
+    try {
+      const activeCursus = $userSession?.cursuses.find((c) => c.isActive);
 
-    if (activeCursus?.cursus?.id) {
-      querySettings.cursusId = activeCursus.cursus.id;
-    }
-
-    const availablePools: AvailablePools[] = await httpGet("/users/available-pools");
-    campusList = await httpGet("/campus");
-    cursusList = await httpGet("/cursus");
-
-    cursusList = cursusList.sort((a, b) => {
-      const aIsDeprecated = a.kind.includes("deprecated");
-      const bIsDeprecated = b.kind.includes("deprecated");
-
-      if (aIsDeprecated && !bIsDeprecated) return 1;
-      if (!aIsDeprecated && bIsDeprecated) return -1;
-
-      if (a.name < b.name) return -1;
-      if (a.name > b.name) return 1;
-
-      console.log("3303", a, b);
-
-      return 0;
-    });
-
-    const tmpYearSet = new Set();
-    const tmpMonthYear: any = {};
-
-    for (const available of availablePools) {
-      tmpYearSet.add(+available.pool_year);
-      if (false === available.pool_year in tmpMonthYear) {
-        tmpMonthYear[available.pool_year] = new Set();
+      if (activeCursus?.cursus?.id) {
+        querySettings.cursusId = activeCursus.cursus.id;
       }
-      tmpMonthYear[available.pool_year].add(available.pool_month);
-    }
 
-    for (const year in tmpMonthYear) {
-      tmpMonthYear[year] = Array.from(tmpMonthYear[year]);
-      tmpMonthYear[year] = tmpMonthYear[year].sort(
-        (a: string, b: string) => MONTHNAME_ORDER.findIndex((v) => v === a) - MONTHNAME_ORDER.findIndex((v) => v === b),
+      const availablePools: AvailablePools[] = await httpGet("/users/available-pools");
+      campusList = await httpGet("/campus");
+      cursusList = await httpGet("/cursus");
+
+      cursusList = cursusList.map((c) =>
+        c.kind.includes("deprecated") ? { ...c, name: "[Deprecated] " + c.name } : c,
       );
-    }
 
-    availablePoolYears = Array.from(tmpYearSet) as number[];
-    availablePoolMonthsPerYear = tmpMonthYear;
+      cursusList = cursusList.sort((a, b) => {
+        const aIsDeprecated = a.kind.includes("deprecated");
+        const bIsDeprecated = b.kind.includes("deprecated");
+
+        if (aIsDeprecated && !bIsDeprecated) return 1;
+        if (!aIsDeprecated && bIsDeprecated) return -1;
+
+        if (a.name < b.name) return -1;
+        if (a.name > b.name) return 1;
+
+        return 0;
+      });
+
+      const tmpYearSet = new Set();
+      const tmpMonthYear: any = {};
+
+      for (const available of availablePools) {
+        if (available.pool_year == "0") continue;
+
+        tmpYearSet.add(+available.pool_year);
+
+        if (false === available.pool_year in tmpMonthYear) {
+          tmpMonthYear[available.pool_year] = new Set();
+        }
+
+        tmpMonthYear[available.pool_year].add(available.pool_month);
+      }
+
+      for (const year in tmpMonthYear) {
+        tmpMonthYear[year] = Array.from(tmpMonthYear[year]);
+        tmpMonthYear[year] = tmpMonthYear[year].sort(
+          (a: string, b: string) =>
+            MONTHNAME_ORDER.findIndex((v) => v === a) - MONTHNAME_ORDER.findIndex((v) => v === b),
+        );
+      }
+
+      availablePoolYears = Array.from(tmpYearSet) as number[];
+      availablePoolMonthsPerYear = tmpMonthYear;
+      isMetadataLoaded = true;
+    } catch (error) {
+      console.error(error);
+    }
   });
 
-  $: if (querySettings.key || querySettings.page) {
+  $: if ((querySettings.key || querySettings.page) && isMetadataLoaded === true) {
     getUserListStats();
     oldSortKey = querySettings.key;
   }
 
   async function getUserListStats() {
     try {
-      isLoadinguserStats = true;
+      isLoadingUserStats = true;
       userStats = [];
 
       const q = new URLSearchParams();
-
-      // if (querySettings.key === oldSortKey) {
-      //   querySettings.order = !querySettings.order;
-      // } else {
-      //   querySettings.order = true;
-      // }
 
       q.append("order", querySettings.order ? "DESC" : "ASC");
       q.append("sort", querySettings.key);
@@ -154,8 +162,6 @@
       }
       if (querySettings.poolMonth !== null) q.append("poolMonth", querySettings.poolMonth);
 
-      // q.append("campus", "9");
-
       const response = await httpGet(`/users?${q.toString()}`);
 
       userStats = response.result;
@@ -165,7 +171,7 @@
     } catch (error) {
       console.error(error);
     } finally {
-      isLoadinguserStats = false;
+      isLoadingUserStats = false;
     }
   }
 </script>
@@ -206,7 +212,7 @@
     <div class="flex-grow">
       <Label class="block mb-0.5">Cursus</Label>
       <Select
-        items={cursusList.map((c) => ({ name: `${c.name} (${c.kind})`, value: c.id }))}
+        items={cursusList.map((c) => ({ name: `${c.name}`, value: c.id }))}
         size="sm"
         class="w-full"
         bind:value={querySettings.cursusId}
@@ -251,10 +257,10 @@
         title="Jump to page"
         class="underline hover:text-gray-400"
         on:click={() => {
-          querySettings.page = Math.ceil(selfPosition / 20);
+          querySettings.page = Math.ceil((selfPosition ?? 0) / 20);
         }}
       >
-        page {Math.ceil(selfPosition ?? 0 / 20)}</a
+        page {Math.ceil((selfPosition ?? 0) / 20)}</a
       >)
     </div>
 
@@ -312,6 +318,7 @@
       {#each userStats as user (user.user_login)}
         <div
           class="flex-grow flex gap-2 dark:bg-gray-800 bg-gray-200 rounded flex-col items-start lg:flex-row lg:items-center py-3"
+          class:opacity-90={user.user_is_alumni}
         >
           <div class="flex items-center gap-2 w-full">
             <div class="w-12 text-center" class:text-xs={user.index + 1 > 10000}>
@@ -340,6 +347,10 @@
                       <Badge color="dark">
                         {campusList.find((c) => c.id === user.user_campus_id)?.name ?? `ID#${user?.user_campus_id}`}
                       </Badge>
+                    {/if}
+
+                    {#if user.user_is_alumni}
+                      <Badge color="dark">Alumni</Badge>
                     {/if}
                   </div>
                   <!-- <div class="flex gap-2">

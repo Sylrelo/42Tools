@@ -24,8 +24,7 @@ export class AppService {
     private readonly userService: UserService,
 
     private readonly rncpProgressService: RncpProgressService,
-  ) { }
-
+  ) {}
 
   @Cron(CronExpression.EVERY_MINUTE, { disabled: false, name: 'syncJob' })
   async syncJob() {

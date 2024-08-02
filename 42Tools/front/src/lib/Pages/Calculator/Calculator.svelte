@@ -6,11 +6,13 @@
   import { httpGet } from "../../../services/http";
   import Graph from "./Graph.svelte";
   import type { Projects } from "@back/src/modules/projects/projects.entity";
+  import type { Users } from "@back/src/modules/users/users.entity";
 
   interface SimulatedProject {
     uuid: string;
     project: Projects | null | undefined;
     mark: number;
+    customProjectExperience: number | undefined;
 
     internshipCalculationsData: {
       [key: string]: number;
@@ -41,7 +43,7 @@
 
   let enableCoalitionBonus = false;
 
-  let projects: any[] = []; // Import type from back
+  let projects: Projects[] = []; // Import type from back
   let graphData: any[] = []; // Type
 
   const defaultSimulatedProject: SimulatedProject = {
@@ -54,13 +56,16 @@
     uuid: crypto.randomUUID(),
     mark: 100,
     project: undefined,
+    customProjectExperience: undefined,
   };
 
   let simulationProjects: SimulatedProject[] = [{ ...defaultSimulatedProject }];
   let user: Partial<Users> = {};
 
-  let baseLevel = 0;
-  let baseXp = 0;
+  let baseLevel: number = 0;
+  let baseXp: number = 0;
+  let xpNeededForNextLevel: number = 0;
+  let nextLevel: number = 0;
 
   function estimatedLevel(currentXp: number) {
     for (let i = 0; i < xpPerLevel.length; i++) {
@@ -83,7 +88,16 @@
 
     const experienceNeedNextLevel = xpPerLevel[intLevel + 1] - xpPerLevel[intLevel];
 
-    return xpLevel + experienceNeedNextLevel * fractLevel;
+    const gainedXp = xpLevel + experienceNeedNextLevel * fractLevel;
+    const experienceToNextLevel = experienceNeedNextLevel - fractLevel * experienceNeedNextLevel;
+    // console.log(">>>", experienceNeedNextLevel - fractLevel * experienceNeedNextLevel);
+
+    // return xpLevel + experienceNeedNextLevel * fractLevel;
+
+    return {
+      gainedXp,
+      experienceToNextLevel,
+    };
   }
 
   function calculateGainedXp(sp: SimulatedProject) {
@@ -99,7 +113,7 @@
           sp.project.experience) /
         90000;
     } else {
-      gainedXp = sp.project.experience * (sp.mark / 100) ?? 0;
+      gainedXp = (sp.customProjectExperience ?? sp.project.experience) * (sp.mark / 100) ?? 0;
     }
 
     return Math.floor(gainedXp * (enableCoalitionBonus ? 1.042 : 1.0));
@@ -125,8 +139,17 @@
     user = await httpGet("/users/me");
     projects = await httpGet(`/projects?cursusId=21`);
 
-    baseLevel = user.level!;
-    baseXp = estimatedXp(user.level!);
+    baseLevel = user.primaryCursusLevel!;
+
+    const estXp = estimatedXp(user.primaryCursusLevel!);
+    baseXp = estXp.gainedXp;
+    xpNeededForNextLevel = estXp.experienceToNextLevel;
+
+    projects.push({
+      experience: -1,
+      id: -1,
+      name: "Custom Entry",
+    } as Projects);
 
     // baseLevel = 15.29;
     // simulationProjects = [
@@ -179,12 +202,19 @@
   }
 
   $: if ([baseLevel]) {
-    baseXp = estimatedXp(baseLevel);
+    const estXp = estimatedXp(user.primaryCursusLevel!);
+    baseXp = estXp.gainedXp;
+    xpNeededForNextLevel = estXp.experienceToNextLevel;
+
+    nextLevel = estimatedLevel(estXp.experienceToNextLevel + estXp.gainedXp) ?? 0;
   }
 
   $: if (simulationProjects) {
     for (const sproject of simulationProjects) {
       sproject.mark = Math.max(0, Math.min(sproject.mark, 125));
+
+      if (sproject.customProjectExperience != null)
+        sproject.customProjectExperience = Math.max(0, Math.min(sproject.customProjectExperience, 1484070));
 
       for (const key in sproject.internshipCalculationsData) {
         if (key === "contractHours") continue;
@@ -193,7 +223,13 @@
       }
     }
 
-    console.log(" Update");
+    const finalLevel = estimatedLevel(accumulateXpUntil(simulationProjects.length - 1));
+
+    if (finalLevel != null) {
+      const estXp = estimatedXp(finalLevel);
+      xpNeededForNextLevel = estXp.experienceToNextLevel;
+      nextLevel = estimatedLevel(estXp.experienceToNextLevel + estXp.gainedXp) ?? 0;
+    }
   }
 </script>
 
@@ -211,6 +247,13 @@
   </div>
 </div>
 
+<h5 class="text-xl mb-4 mt-4">Infos</h5>
+<div>
+  <Badge class="text-lg" color="indigo">
+    {xpNeededForNextLevel.toLocaleString()} XP
+  </Badge> left for level <Badge class="text-lg" color="indigo">{nextLevel}</Badge>
+</div>
+
 <h5 class="text-xl mb-4 mt-8 flex items-end justify-between">
   <div>Calculator</div>
   <div>
@@ -219,7 +262,8 @@
       class="px-6 py-2 "
       outline
       on:click={() => {
-        baseLevel = user.level;
+        //@ts-ignore
+        baseLevel = user.primaryCursusLevel;
 
         simulationProjects = [
           {
@@ -265,9 +309,13 @@
 
           <div class="flex-grow flex gap-2 items-center justify-between">
             <div class="w-32 flex-grow text-center">
-              <Badge color="dark" class="text-lg w-full">
-                + {calculateGainedXp(sproject).toLocaleString()} XP
-              </Badge>
+              {#if sproject.project?.id === -1}
+                <Input type="text" size="sm" bind:value={sproject.customProjectExperience} />
+              {:else}
+                <Badge color="dark" class="text-lg w-full">
+                  + {calculateGainedXp(sproject).toLocaleString()} XP
+                </Badge>
+              {/if}
             </div>
             <div class="w-24 flex-grow text-center">
               {#key baseLevel}

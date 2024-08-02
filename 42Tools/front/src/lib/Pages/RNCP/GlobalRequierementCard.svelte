@@ -8,6 +8,8 @@
   export let selectedRncpIndex: number;
   export let rncpDefinition: RncpDefinitionInterface[];
 
+  export let realData: Record<string, any> = { level: null, events: null, proExp: null };
+
   export let title: string;
 
   let keyRncp = "";
@@ -51,7 +53,15 @@
       color = "red";
     }
 
-    return progress.toFixed(2);
+    if (keyGlobalProgress === "level" && realData.level) {
+      return realData.level.toFixed(2);
+    }
+
+    if (keyGlobalProgress === "level") {
+      return progress.toFixed(2);
+    } else {
+      return progress.toFixed(0);
+    }
   }
 </script>
 

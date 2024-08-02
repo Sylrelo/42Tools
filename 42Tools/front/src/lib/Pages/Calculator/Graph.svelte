@@ -16,6 +16,9 @@
       dropShadow: {
         enabled: false,
       },
+      zoom: {
+        enabled: false,
+      },
       toolbar: {
         show: false,
       },

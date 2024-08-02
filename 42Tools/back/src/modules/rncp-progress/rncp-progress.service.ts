@@ -116,7 +116,7 @@ export class RncpProgressService {
       const events = student.eventUser.filter((f) => !['exam', 'extern', 'association'].includes(f.event.kind));
 
       const proExp = validatedRncpProject.filter(
-        (p) => [118, 212, 1638, 1644, 1650, 1656, 2338, 2339, 2340, 2341, 1055, 1662].includes(p.project.id) && p.isValidated,
+        (p) => [118, 212, 1638, 1644, 1650, 1656, 2338, 2339, 2340, 2341, 1055, 1662, 1857, 1865].includes(p.project.id) && p.isValidated,
       );
 
       this.logger.debug(`Updating RNCP Cached Progress for ${student.id} (${student.login ?? ''})`);

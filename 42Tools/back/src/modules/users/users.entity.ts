@@ -1,11 +1,12 @@
 import 'reflect-metadata';
-import { Column, Entity, Index, OneToMany, PrimaryColumn } from 'typeorm';
+import { AfterLoad, Column, Entity, Index, OneToMany, PrimaryColumn } from 'typeorm';
 import { ProjectUsers } from '../project-users/project-users.entity';
 import { IUser } from 'src/Interfaces/42';
 import { EventUser } from '../events/event-user.entity';
 import { CachedRncpProgress } from '../rncp-progress/rncp-progress.entity';
 import { UserLocation } from '../user-locations/user-location.entity';
 import { CursusUser } from '../base/entities/cursus-users';
+import dayjs from 'dayjs';
 
 @Entity({ name: 'users' })
 export class Users {
@@ -26,7 +27,6 @@ export class Users {
 
   @Column({ nullable: true })
   poolMonth: string;
-
 
   /** @deprecated for CursusUser relation */
   @Column({ nullable: true, type: 'float' })
@@ -88,7 +88,7 @@ export class Users {
   userLocations: UserLocation[];
 
   @OneToMany(() => CursusUser, (cursusUser) => cursusUser.user)
-  cursuses: CursusUser[]
+  cursuses: CursusUser[];
 
   @Column({ default: false })
   ignoreFutureUpdate: boolean;
@@ -101,6 +101,20 @@ export class Users {
 
   @Column({ type: 'timestamp', nullable: true })
   anonymizationDate: string | number | Date;
+
+  primaryCursusLevel: number = -1;
+
+  @AfterLoad()
+  getPrimaryCursusLevel() {
+    if (this.cursuses == null) {
+      return;
+    }
+
+    const activeCursuses = this.cursuses.filter((cursus) => cursus.end_at == null && cursus.isActive === true);
+    activeCursuses.sort((a, b) => dayjs(b.begin_at).diff(a.begin_at));
+
+    if (activeCursuses[0] != null) this.primaryCursusLevel = activeCursuses[0].level;
+  }
 
   constructor(userId?: number) {
     if (userId != null) {
