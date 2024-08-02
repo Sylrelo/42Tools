@@ -102,11 +102,12 @@ export class Users {
   @Column({ type: 'timestamp', nullable: true })
   anonymizationDate: string | number | Date;
 
-  primaryCursusLevel: number = -1;
+  primaryCursusLevel: number;
 
   @AfterLoad()
   getPrimaryCursusLevel() {
     if (this.cursuses == null) {
+      this.primaryCursusLevel = -1;
       return;
     }
 
@@ -114,6 +115,7 @@ export class Users {
     activeCursuses.sort((a, b) => dayjs(b.begin_at).diff(a.begin_at));
 
     if (activeCursuses[0] != null) this.primaryCursusLevel = activeCursuses[0].level;
+    else this.primaryCursusLevel = -1;
   }
 
   constructor(userId?: number) {
