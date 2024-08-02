@@ -143,14 +143,14 @@ export class RncpProgressService {
 
           const key = `${student.id}-${section.id}`;
 
-          const maxTokenProjectCount = section.totalProjectCount * 10;
-          const maxTokenProjectExperience = section.totalProjectExperience / 10000;
+          const maxTokenProjectCount = section.totalProjectCount * 2;
+          const maxTokenProjectExperience = section.totalProjectExperience / 3500;
           const maxTokens = maxTokenProjectCount + maxTokenProjectExperience;
 
           let totalTokens = 0;
 
-          if (section.totalProjectCount > 0) totalTokens += Math.min(maxTokenProjectCount, total.count * 10);
-          if (section.totalProjectExperience > 0) totalTokens += Math.min(maxTokenProjectExperience, total.xp / 10000);
+          if (section.totalProjectCount > 0) totalTokens += Math.min(maxTokenProjectCount, total.count * 2);
+          if (section.totalProjectExperience > 0) totalTokens += Math.min(maxTokenProjectExperience, total.xp / 3500);
 
           const totalProjectSectionPercent = (totalTokens / maxTokens) * 100;
 

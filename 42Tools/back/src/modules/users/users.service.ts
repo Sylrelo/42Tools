@@ -201,14 +201,14 @@ export class UserService {
     try {
       const userForRncpUpdate = await this.getUserInfoForRncpUpdate(studentId);
       await this.rncpProgressService.calculateCachedRncpProgressForUser(userForRncpUpdate);
-      await this.setCachedProgressUpdatedAt(userForRncpUpdate);
+      await this.setCachedProgressUpdatedAt(studentId);
     } catch (error) {
       this.logger.error(`Cannot update RNCP Cached Progress for ${studentId}`);
     }
   }
 
   @Timeout(1000)
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async updateAllOlderCachedRncpProgress() {
     const whereConds: FindOptionsWhere<Users>[] = [
       {
@@ -479,8 +479,8 @@ export class UserService {
     throw new UnprocessableEntityException();
   }
 
-  async setCachedProgressUpdatedAt(user: Users) {
-    await this.repo.update({ id: user.id }, { lastCachedProgressUpdatedAt: dayjs().format() });
+  async setCachedProgressUpdatedAt(userId: number) {
+    await this.repo.update({ id: userId }, { lastCachedProgressUpdatedAt: dayjs().format() });
   }
 
   async userExists(userId: number) {
@@ -509,6 +509,7 @@ export class UserService {
       });
 
       await this.cursusUserService.updateCursusUserFromApi(loginResponse.cursus_users);
+      await this.updateCachedRncpProgress(user.id);
 
       try {
         await this.projectUserSerivce.batchInsert(new Users(loginResponse.id), loginResponse.projects_users);
@@ -533,12 +534,23 @@ export class UserService {
       //        throw new ForbiddenException("You've been blackholed. You can't access API resources anymore.");
       //      }
 
+      const userWithCursuses = await this.repo.findOne({
+        where: { id: user.id },
+        select: { cursuses: true },
+        relations: {
+          cursuses: {
+            cursus: true,
+          },
+        },
+      });
+
       const userData = {
         id: loginResponse.id,
         login: loginResponse.login,
         campusId: user.campusId,
         isPool: user.level === -1 || user.level == null,
         isStaff: loginResponse?.['staff?'] ?? false,
+        cursuses: userWithCursuses?.cursuses ?? [],
       };
 
       const jwtPayload = {

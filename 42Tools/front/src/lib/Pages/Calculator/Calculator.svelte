@@ -248,10 +248,19 @@
 </div>
 
 <h5 class="text-xl mb-4 mt-4">Infos</h5>
-<div>
-  <Badge class="text-lg" color="indigo">
-    {xpNeededForNextLevel.toLocaleString()} XP
-  </Badge> left for level <Badge class="text-lg" color="indigo">{nextLevel}</Badge>
+<div class="flex flex-col gap-2">
+  <div>
+    Total XP for current level :
+    <Badge class="text-lg" color="indigo">
+      {baseXp.toLocaleString()}
+    </Badge>
+  </div>
+
+  <div>
+    <Badge class="text-lg" color="indigo">
+      {xpNeededForNextLevel.toLocaleString()} XP
+    </Badge> left for level <Badge class="text-lg" color="indigo">{nextLevel}</Badge>
+  </div>
 </div>
 
 <h5 class="text-xl mb-4 mt-8 flex items-end justify-between">

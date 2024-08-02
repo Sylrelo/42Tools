@@ -252,16 +252,19 @@
     <div class="mb-5 mt-4">
       Your position with the currently selected filter/sort:
       <span class="font-bold">{selfPosition ?? "--"}</span> / {userCount.toLocaleString()}
-      (<a
-        href="##"
-        title="Jump to page"
-        class="underline hover:text-gray-400"
-        on:click={() => {
-          querySettings.page = Math.ceil((selfPosition ?? 0) / 20);
-        }}
-      >
-        page {Math.ceil((selfPosition ?? 0) / 20)}</a
-      >)
+
+      {#if selfPosition != null}
+        (<a
+          href="##"
+          title="Jump to page"
+          class="underline hover:text-gray-400"
+          on:click={() => {
+            querySettings.page = Math.ceil(selfPosition / 20);
+          }}
+        >
+          page {Math.ceil(selfPosition / 20)}</a
+        >)
+      {/if}
     </div>
 
     <!-- ################################################# -->

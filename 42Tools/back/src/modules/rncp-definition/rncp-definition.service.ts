@@ -27,7 +27,7 @@ export class RncpDefinitionService {
 
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) { }
+  ) {}
 
   async emptyCache() {
     await this.cacheManager.del(RncpDefinitionService.CACHE_KEY);
@@ -153,8 +153,7 @@ export class RncpDefinitionService {
 
   // @Timeout(500)
   async _init() {
-
-    console.log("Init RNCP Definition")
+    console.log('Init RNCP Definition');
 
     await this.repo.delete({});
 
@@ -196,10 +195,9 @@ export class RncpDefinitionService {
 
               await this.rncpProject.save(iProject);
             } catch (error) {
-              console.error(error?.message)
+              console.error(error?.message);
             }
           }
-
         }
 
         const rncpDefinition = new RncpDefinition();
