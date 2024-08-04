@@ -376,47 +376,49 @@
 
           <div class="text-center flex w-full gap-2 items-center justify-center lg:justify-end mt-4 lg:mt-0">
             <div
-              class="w-24"
+              class="w-24 flex flex-col justify-center items-center"
               class:font-bold={querySettings.key === "poolLevel"}
               class:text-lg={querySettings.key === "poolLevel"}
             >
-              <span class="lg:hidden mr-2">PL:</span>
+              <span class="lg:hidden text-xss font-normal">Pool Lv</span>
+
               {user.user_pool_level?.toFixed(2) ?? "--"}
             </div>
 
             <div
-              class="w-24"
+              class="w-24 flex flex-col justify-center items-center"
               class:font-bold={querySettings.key === "level"}
               class:text-lg={querySettings.key === "level"}
             >
-              <span class="lg:hidden mr-2">L:</span>
-              {user.user_level?.toFixed(2) ?? "--"}
+              <span class="lg:hidden text-xss font-normal">Level</span>
+              <span>{user.user_level?.toFixed(2) ?? "--"}</span>
             </div>
 
             <div
-              class="w-24"
+              class="w-24 flex flex-col justify-center items-center"
               class:font-bold={querySettings.key === "wallet"}
               class:text-lg={querySettings.key === "wallet"}
             >
-              <span class="lg:hidden mr-2">W:</span>
+              <span class="lg:hidden text-xss font-normal">Wallets</span>
+
               {user.user_wallet?.toLocaleString() ?? "--"}
             </div>
 
             <div
-              class="w-24"
+              class="w-24 flex flex-col justify-center items-center"
               class:font-bold={querySettings.key === "correctionPoint"}
               class:text-lg={querySettings.key === "correctionPoint"}
             >
-              <span class="lg:hidden mr-2">CP:</span>
+              <span class="lg:hidden text-xss font-normal">Correction Points</span>
               {user.user_correction_point?.toLocaleString() ?? "--"}
             </div>
 
             <div
-              class="w-24"
+              class="w-24 flex flex-col justify-center items-center"
               class:font-bold={querySettings.key === "projects"}
               class:text-lg={querySettings.key === "projects"}
             >
-              <span class="lg:hidden mr-2">VP:</span>
+              <span class="lg:hidden text-xss font-normal">Projects</span>
               {user.user_validated_projects?.toLocaleString() ?? "--"}
             </div>
           </div>
