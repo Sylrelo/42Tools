@@ -11,18 +11,18 @@
   $: if (active || !active) {
     activeClasses = active
       ? "dark:text-white outline outline-1 outline-black dark:outline-white"
-      : "dark:text-gray-400";
+      : "dark:text-gray-400 ";
   }
 </script>
 
-<Card on:click size="none" padding="sm" class={"cursor-pointer flex flex-col justify-between " + activeClasses}>
-  <h5 class="text-2xl flex justify-between">
+<Card on:click size="none" class={"cursor-pointer flex flex-col justify-between p-2 md:p-4 " + activeClasses}>
+  <h5 class="text-xl md:text-2xl flex justify-between">
     <div>
       RNCP {rncpLevel}
     </div>
     <div>
-      <p class="text-2xl font-bold">{rncpProgress} %</p>
+      <p class="text-xl md:text-2xl font-bold">{rncpProgress} %</p>
     </div>
   </h5>
-  <p class="">{rncpOption}</p>
+  <p class="text-sm md:text-lg">{rncpOption}</p>
 </Card>

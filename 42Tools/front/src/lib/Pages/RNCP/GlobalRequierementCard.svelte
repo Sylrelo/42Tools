@@ -66,19 +66,16 @@
 </script>
 
 <Card size="none" padding="xs">
-  <span class="flex items-center justify-between mb-1">
-    <span
-      class="text-md
-    "
-    >
+  <span class="flex items-center justify-between mb-1 flex-col md:flex-row">
+    <span class="text-md">
       {title}
     </span>
-    <div>
+    <span>
       {#key selectedRncpIndex}
         <b class="text-lg">{calculateCurrent(keyRncp, keyProgress)}</b>
       {/key}/
       {rncpDefinition[selectedRncpIndex].sections[0][keyRncp]}
-    </div>
+    </span>
   </span>
 
   <Progressbar {color} size="h-2" progress={myGlobalProgress[selectedRncpIndex].details[keyProgress]} />

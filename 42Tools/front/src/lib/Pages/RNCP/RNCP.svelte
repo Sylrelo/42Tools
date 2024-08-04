@@ -136,7 +136,7 @@
       {:else if userInfos?.lastUpdatedAt == null}
         Update queued, come back later.
       {:else}
-        <div class="text-sm">
+        <div class="hidden md:block md:text-sm">
           User Updated At : {dayjs(userInfos.lastUpdatedAt).format("DD/MM/YY HH[h]")}<br />
           RNCP Updated At : {dayjs(userInfos.lastCachedProgressUpdatedAt).format("DD/MM/YY HH[h]")}
         </div>
@@ -175,9 +175,9 @@
 
   <p class="text-2xl dark:text-white font-bold mb-2">Detail</p>
 
-  <p class="text-lg dark:text-white mb-2">Global requierements progression</p>
+  <p class="text-md dark:text-white mb-2">Global requierements progression</p>
 
-  <div class="mb-2 grid grid-cols-1 lg:grid-cols-3 gap-1">
+  <div class="mb-2 grid grid-cols-3 lg:grid-cols-3 gap-1">
     {#if isLoading === false && rncpDefinition[selectedRncpIndex]}
       <GlobalRequierementCard
         {myGlobalProgress}
@@ -202,7 +202,7 @@
   </div>
 
   <div>
-    <p class="text-lg dark:text-white mt-4 mb-2">Project progression</p>
+    <p class="text-md dark:text-white mt-4 mb-2">Project progression</p>
     <Alert class="mb-2" color="gray">Tips : You can input a custom mark to simulate progression</Alert>
 
     <div class="gap-2 grid grid-cols-1 md:grid-cols-2 lg:flex">
