@@ -321,7 +321,7 @@
     </div>
 
     <div class="flex flex-col gap-0.5">
-      {#each userStats as user (user._rnd)}
+      {#each userStats as user (user._rnd + user.user_login)}
         <div
           class="flex-grow flex gap-2 dark:bg-gray-800 bg-gray-200 rounded flex-col items-start lg:flex-row lg:items-center py-3"
           class:opacity-90={user.user_is_alumni}
@@ -343,7 +343,12 @@
                 <div class="flex flex-col">
                   <div class="font-bold">{user.user_full_name}</div>
                   <div class="flex gap-1">
-                    <div>{user.user_login}</div>
+                    <div>
+                      <a href="https://profile.intra.42.fr/users/{user.user_login}" target="_blank" class="hover:underline">
+                      <i class="ti ti-link"></i>
+                      {user.user_login}
+                      </a>
+                    </div>
 
                     <Badge color="dark">
                       {user.user_pool_year ?? "unknown"}
