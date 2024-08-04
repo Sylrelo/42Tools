@@ -164,6 +164,9 @@
 
       const response = await httpGet(`/users?${q.toString()}`);
 
+
+      response.result = response.result.map(r => ({...r, _rnd: (Math.random() + 1).toString(36).substring(7)}))
+
       userStats = response.result;
       userCount = response.count;
       timeTaken = response.timeTaken;
@@ -318,7 +321,7 @@
     </div>
 
     <div class="flex flex-col gap-0.5">
-      {#each userStats as user (user.user_login)}
+      {#each userStats as user (user._rnd)}
         <div
           class="flex-grow flex gap-2 dark:bg-gray-800 bg-gray-200 rounded flex-col items-start lg:flex-row lg:items-center py-3"
           class:opacity-90={user.user_is_alumni}
