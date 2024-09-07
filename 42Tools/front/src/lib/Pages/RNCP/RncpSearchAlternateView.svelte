@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { CachedRncpProgress } from "@back/src/modules/rncp-progress/rncp-progress.entity";
+  import type { Users } from "@back/src/modules/users/users.entity";
   import {
     Avatar,
     Badge,
@@ -11,12 +13,10 @@
     TableHead,
     TableHeadCell,
   } from "flowbite-svelte";
-  import { formatDateDisplay, showTimeLeft } from "./utils";
-  import type { CachedRncpProgress } from "@back/src/modules/rncp-progress/rncp-progress.entity";
   import { onMount } from "svelte";
   import { httpGet, httpPatch } from "../../../services/http";
+  import { formatDateDisplay, showTimeLeft } from "./utils";
   import type { RncpDefinition } from "@back/src/modules/rncp-definition/rncp-definition.entity";
-  import type { Users } from "@back/src/modules/users/users.entity";
 
   //
 
@@ -33,6 +33,7 @@
   onMount(async () => {
     apprenticeshipRythm = await httpGet("/apprenticeship");
   });
+
   //
 
   function getColor(percent: number) {
@@ -48,6 +49,20 @@
     }
 
     return "red";
+  }
+
+  function displayCorrectRncpName(rncpKey?: string) {
+    if (rncpKey == null) {
+      return "--";
+    }
+
+    const rncp = rncpDefinition.find((r) => r.rncpKey === rncpKey);
+
+    if (rncp == null) {
+      return "--";
+    }
+
+    return `${rncp.level} - ${rncp.option}`;
   }
 
   async function updateUserData(
@@ -158,7 +173,7 @@
               size="sm"
             />
           {:else}
-            {progress.user.apprenticeshipRncp ?? "--"}
+            {displayCorrectRncpName(progress.user.apprenticeshipRncp)}
           {/if}
         </TableBodyCell>
 
