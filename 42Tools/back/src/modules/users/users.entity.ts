@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { AfterLoad, Column, Entity, Index, OneToMany, PrimaryColumn } from 'typeorm';
+import { AfterLoad, Column, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryColumn } from 'typeorm';
 import { ProjectUsers } from '../project-users/project-users.entity';
 import { IUser } from 'src/Interfaces/42';
 import { EventUser } from '../events/event-user.entity';
@@ -7,6 +7,7 @@ import { CachedRncpProgress } from '../rncp-progress/rncp-progress.entity';
 import { UserLocation } from '../user-locations/user-location.entity';
 import { CursusUser } from '../base/entities/cursus-users';
 import dayjs from 'dayjs';
+import { RncpDefinition } from '../rncp-definition/rncp-definition.entity';
 
 @Entity({ name: 'users' })
 export class Users {
@@ -67,13 +68,16 @@ export class Users {
   isStaff: boolean;
 
   @Column({ default: null, type: 'date' })
-  apprenticeshipStartDate?: number;
+  apprenticeshipStartDate?: string;
 
   @Column({ default: null, type: 'date' })
-  apprenticeshipEndDate?: number;
+  apprenticeshipEndDate?: string;
 
   @Column({ default: null })
   apprenticeshipRythm?: string;
+
+  @Column({ default: null, nullable: true })
+  apprenticeshipRncp?: string;
 
   @OneToMany(() => CachedRncpProgress, (cached) => cached.user)
   cachedRncpProgress: CachedRncpProgress[];
@@ -101,6 +105,9 @@ export class Users {
 
   @Column({ type: 'timestamp', nullable: true })
   anonymizationDate: string | number | Date;
+
+  @Column({ type: 'float', nullable: false, default: -1 })
+  activeCursusLevel: number;
 
   primaryCursusLevel: number;
 
@@ -167,8 +174,27 @@ export class Users {
     }
 
     if (user?.cursus_users != null && Array.isArray(user.cursus_users)) {
+      // TODO : Remove deprecated Level
       const mainCursus = user.cursus_users.find((c) => c.cursus.kind.toLowerCase() === 'main');
       const mainCursusDeprecated = user.cursus_users.find((c) => c.cursus.kind.toLowerCase() === 'main_deprecated');
+
+      // New way
+
+      //   if (
+      //     input.begin_at != null && dayjs(input.begin_at).isBefore(undefined)
+      //     && (input.end_at == null || (input.end_at != null && dayjs(input.end_at).isAfter(undefined)))
+      // ) {
+      //     entity.isActive = true;
+      // }
+
+      const activeCursuses = user.cursus_users.filter((cursus) =>
+        cursus.begin_at != null &&
+        dayjs(cursus.begin_at).isBefore(undefined) &&
+        (cursus.end_at == null || (cursus.end_at != null && dayjs(cursus.end_at).isAfter(undefined)))
+      );
+
+      activeCursuses.sort((a, b) => dayjs(b.begin_at).diff(a.begin_at));
+      this.activeCursusLevel = activeCursuses?.[0]?.level ?? -1;
 
       const poolCursus = user.cursus_users.find((c) => c.cursus.kind.toLowerCase() === 'piscine');
       const poolCursusDeprecated = user.cursus_users.find((c) => c.cursus.kind.toLowerCase() === 'piscine_deprecated');

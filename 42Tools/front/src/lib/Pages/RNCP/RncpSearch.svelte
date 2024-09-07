@@ -1,18 +1,24 @@
 <script lang="ts">
   import type { CachedRncpProgress } from "@back/src/modules/rncp-progress/rncp-progress.entity";
-  import type { Users } from "@back/src/modules/users/users.entity";
 
   import type { RncpDefinition } from "@back/src/modules/rncp-definition/rncp-definition.entity";
   import dayjs from "dayjs";
-  import { Alert, Avatar, Badge, Button, Input, Label, Select, Toggle } from "flowbite-svelte";
+  import { Avatar, Badge, Button, Input, Label, Select, Toggle } from "flowbite-svelte";
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
   import { httpGet, userSession } from "../../../services/http";
   import Paginator from "../../Paginator.svelte";
 
   import ArrowRightSolid from "flowbite-svelte-icons/ArrowRightSolid.svelte";
-  import StudentsSettingsModal from "./StudentsSettingsModal.svelte";
   import { showTimeLeft } from "./utils";
+
+  import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+  import IsSameOrBefore from "dayjs/plugin/IsSameOrBefore";
+  import RncpSearchAlternateView from "./RncpSearchAlternateView.svelte";
+  dayjs.extend(isSameOrAfter);
+  dayjs.extend(IsSameOrBefore);
+
+  ///
 
   let rncpDefinition: RncpDefinition[] = [];
   let rncpProgress: CachedRncpProgress[] = [];
@@ -32,12 +38,15 @@
   let selectedRncpId: any = -1;
   let selectedCampusId: number | null = $userSession?.campusId ?? null;
 
+  let alternativeView: boolean = false;
+  let editMode: boolean = false;
+
   let filterOptions = {
     hideCompleted: false,
     showApprenticeOnly: false,
+    selectedStartDate: null,
+    selectedEndDate: null,
   };
-
-  let studentSettingModalOpen = false;
 
   let tableSort = {
     key: "totalProgress",
@@ -47,6 +56,8 @@
   let campusList: any[] = [];
 
   onMount(async () => {
+    loadFilters();
+
     isLoading = true;
 
     rncpDefinition = await httpGet("/rncp-definition");
@@ -91,10 +102,31 @@
   }
 
   $: [selectedCampusId] && makeRequest();
-  $: [page, searchQuery, selectedRncpId, filterOptions.hideCompleted] && filterResults();
+  $: if (editMode === true && alternativeView === false) {
+    alternativeView = true;
+  }
+
+  $: [alternativeView] && saveFilters();
+
+  $: [
+    page,
+    searchQuery,
+    selectedRncpId,
+    filterOptions.hideCompleted,
+    filterOptions.selectedStartDate,
+    filterOptions.selectedEndDate,
+  ] && filterResults();
 
   function filterResults() {
+    saveFilters();
     const totalPages = Math.ceil(rncpProgress.length / PER_PAGE);
+
+    if (
+      (filterOptions.selectedStartDate || filterOptions.selectedEndDate) &&
+      filterOptions.showApprenticeOnly === false
+    ) {
+      filterOptions.showApprenticeOnly = true;
+    }
 
     for (let i = page; i < Math.min(page + 10, totalPages); i++) {
       pagination.push({ name: i + 1 });
@@ -124,7 +156,28 @@
 
       const showApprenticeOnly = filterOptions.showApprenticeOnly ? rp.user.apprenticeshipEndDate != null : true;
 
-      return hasQuery && isRncpSelected && removeCompleted && showApprenticeOnly;
+      const isAfterStartDate = filterOptions.selectedStartDate
+        ? dayjs(filterOptions.selectedStartDate).isSameOrAfter(rp.user.apprenticeshipStartDate)
+        : true;
+
+      const isBeforeEndDate = filterOptions.selectedEndDate
+        ? dayjs(filterOptions.selectedEndDate).isSameOrBefore(rp.user.apprenticeshipEndDate)
+        : true;
+
+      // console.log();
+      const showOnlyCurrentRncp = filterOptions.showApprenticeOnly
+        ? rp.user.apprenticeshipRncp === rp.rncp.rncpKey
+        : true;
+
+      return (
+        hasQuery &&
+        isRncpSelected &&
+        removeCompleted &&
+        showApprenticeOnly &&
+        isBeforeEndDate &&
+        isAfterStartDate &&
+        showOnlyCurrentRncp
+      );
     });
 
     // if (filterOptions.showApprenticeOnly) {
@@ -145,61 +198,78 @@
     filterResults();
   }
 
-  $: if (studentSettingModalOpen === false) {
-    makeRequest();
+  const FILTER_STORAGE_KEY = "RNCP_SEARCH_VIEWSETTINGS";
+
+  function loadFilters() {
+    setTimeout(() => {
+      const asStr = localStorage.getItem(FILTER_STORAGE_KEY);
+
+      if (asStr == null) {
+        return;
+      }
+
+      const asJson = JSON.parse(asStr);
+
+      filterOptions = asJson.filterOptions;
+      alternativeView = asJson.alternativeView;
+    }, 60);
   }
+
+  let _timeoutSaveFilter: any = null;
+
+  function saveFilters() {
+    clearTimeout(_timeoutSaveFilter);
+
+    _timeoutSaveFilter = setTimeout(() => {
+      const asStr = JSON.stringify({
+        filterOptions,
+        alternativeView: true,
+      });
+
+      localStorage.setItem(FILTER_STORAGE_KEY, asStr);
+    }, 400);
+  }
+
+  $: console.log({ alternativeView });
 </script>
 
 <h5 class="text-3xl font-bold mb-4 flex justify-between">
   <div>RNCP Search</div>
 
   {#if $userSession?.isStaff === true || $userSession?.login === "slopez"}
-    <Button
-      color="light"
-      class="gap-2"
-      on:click={() => {
-        studentSettingModalOpen = true;
-      }}
-    >
-      <i class="ti ti-settings text-lg" />
-      <span> Students settings </span>
-    </Button>
+    <Toggle class="mb-2" bind:checked={editMode}>Edit mode</Toggle>
   {/if}
 </h5>
 
-<Alert color="indigo" class="mb-4 mt-2">
-  <div class="font-bold">Information</div>
-
-  - Apprenticeship status cannot be determined automatically for now, only by manual toggle (student or staff).<br />
-  - Percentages calculation may change in the future.<br />
-  - Page is still a work in progress. <br />
-</Alert>
+<!-- /* --------------------------------- FILTERS -------------------------------- */ -->
 
 <h5 class="text-xl mb-4">View & filter</h5>
-<div class=" w-full mb-6 gap-4 grid grid-cols-1 md:grid-cols-4">
-  <div class="w-full">
+<div class="w-full mb-6 gap-2 flex flex-wrap items-center">
+  <div class="flex-grow w-50">
     <Toggle class="mb-2" bind:checked={filterOptions.hideCompleted}>Hide completed</Toggle>
     <Toggle class="mb-2" bind:checked={filterOptions.showApprenticeOnly}>Show apprentice only</Toggle>
+    <Toggle class="mb-2" bind:checked={alternativeView}>Alternative view</Toggle>
   </div>
 
-  <div class="w-full">
-    <Label for="large-input" class="block mb-2">Search login or name</Label>
-    <Input size="md" id="large-input" placeholder="" disabled={isLoading} bind:value={searchQuery} />
+  <div class="flex-grow w-40">
+    <Label for="inp-login" class="block mb-2">Search login or name</Label>
+    <Input size="md" id="inp-login" placeholder="" disabled={isLoading} bind:value={searchQuery} />
   </div>
 
-  <div class="w-full">
-    <Label for="large-input" class="block mb-2">Campus</Label>
+  <div class="flex-grow w-20">
+    <Label for="inpt-campus" class="block mb-2">Campus</Label>
     <Select
       size="md"
-      id="large-input"
+      id="inpt-campus"
       bind:value={selectedCampusId}
       items={[...campusList.map((c) => ({ name: c.name, value: c.id }))]}
     />
   </div>
 
-  <div class="w-full">
-    <Label for="large-input" class="block mb-2">RNCP</Label>
+  <div class="flex-grow" style:width="30%">
+    <Label for="inpt-rncp" class="block mb-2">RNCP</Label>
     <Select
+      id="inpt-rncp"
       size="md"
       bind:value={selectedRncpId}
       items={[
@@ -211,7 +281,19 @@
       ]}
     />
   </div>
+
+  <div class="flex-grow w-40">
+    <Label for="inpt-date-start" class="block mb-2">Apprenticeship start date</Label>
+    <Input type="date" id="inpt-date-start" bind:value={filterOptions.selectedStartDate} />
+  </div>
+
+  <div class="flex-grow w-40">
+    <Label for="inpt-date-start" class="block mb-2">Apprenticeship end date</Label>
+    <Input type="date" id="inpt-date-start" bind:value={filterOptions.selectedEndDate} />
+  </div>
 </div>
+
+<!-- /* --------------------------------- CONTENT -------------------------------- */ -->
 
 <div class="flex flex-col gap-0.5">
   {#if isLoading}
@@ -227,67 +309,94 @@
     {/each}
   {/if}
 
-  {#each filteredProgress as progress (progress.id)}
-    <div class="flex flex-row items-center justify-between gap-2 rounded bg-white dark:bg-gray-800 p-3">
-      <div class="flex gap-3 flex-grow">
-        {#if progress.user.profilePicture}
-          <img src={progress.user.profilePicture} class="w-14 h-14 object-cover rounded-full" alt="avatar" />
-        {:else}
-          <Avatar class="w-14 h-14" />
-        {/if}
-        <div class="flex flex-col">
-          <div class="font-bold">{progress.user.fullName}</div>
-          <div class="flex gap-2">
-            <div>{progress.user.login}</div>
-            <Badge color="dark">{progress.user.poolYear}</Badge>
+  <div class="mt-2 flex w-100 justify-end">
+    <Paginator
+      totalPage={Math.ceil(filteredPageCount / PER_PAGE)}
+      currentPage={page + 1}
+      on:pageChange={(newPage) => {
+        page = newPage.detail - 1;
+      }}
+    />
+  </div>
+
+  {#if alternativeView}
+    <RncpSearchAlternateView {filteredProgress} {rncpDefinition} onUpdate={() => makeRequest()} {editMode} />
+  {:else}
+    {#each filteredProgress as progress (progress.id)}
+      <div class="flex flex-row items-center justify-between gap-2 rounded bg-white dark:bg-gray-800 p-3">
+        <div class="flex gap-3 flex-grow">
+          {#if progress.user.profilePicture}
+            <img src={progress.user.profilePicture} class="w-14 h-14 object-cover rounded-full" alt="avatar" />
+          {:else}
+            <Avatar class="w-14 h-14" />
+          {/if}
+          <div class="flex flex-col">
+            <div class="font-bold">{progress.user.fullName}</div>
+            <div class="flex gap-2">
+              <div>
+                <a
+                  href="https://profile.intra.42.fr/users/{progress.user.login}"
+                  target="_blank"
+                  class="hover:underline"
+                >
+                  <i class="ti ti-link"></i>
+                  {progress.user.login}
+                </a>
+              </div>
+              <Badge color="dark">{progress.user.poolYear}</Badge>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- <div class="flex"> -->
-      <div class="w-36 hidden lg:flex gap-1">
-        {#if progress.user.apprenticeshipEndDate}
-          {#if progress.user.apprenticeshipStartDate}
-            <Badge color="green">
-              {dayjs(progress.user.apprenticeshipEndDate).diff(progress.user.apprenticeshipStartDate, "years")}
+        <!-- <div class="flex"> -->
+        <div class=" hidden lg:flex gap-1">
+          {#if progress.user.apprenticeshipEndDate}
+            <Badge color="dark">
+              {progress.user.apprenticeshipRythm}
+            </Badge>
+
+            {#if progress.user.apprenticeshipStartDate}
+              <Badge color="green">
+                {dayjs(progress.user.apprenticeshipEndDate).diff(progress.user.apprenticeshipStartDate, "years")}
+              </Badge>
+            {/if}
+
+            <Badge class=" w-full" color="indigo">
+              {showTimeLeft(progress.user.apprenticeshipEndDate)}
             </Badge>
           {/if}
+        </div>
 
-          <Badge class=" w-full" color="indigo">
-            {showTimeLeft(progress.user.apprenticeshipEndDate)}
+        <div class="w-10 text-center hidden md:block">{progress.rncp.level}</div>
+
+        <div class="w-60 text-sm hidden md:block">{progress.rncp.option}</div>
+
+        <div class="flex flex-col gap-0.5 w-36">
+          <Badge color={getColor(progress.totalProgress)} class="text-lg w-full">
+            {progress.totalProgress.toFixed(2)} %
           </Badge>
-        {/if}
+          <Badge color="none" title="Last updated at">
+            {dayjs(progress.user.lastUpdatedAt).format("DD/MM/YYYY HH:mm")}
+          </Badge>
+        </div>
+
+        <div>
+          <Button
+            size="xs"
+            color="light"
+            class="m-0 px-2"
+            on:click={() => navigate("/rncp-progress/" + progress.user.id)}
+          >
+            <ArrowRightSolid size="lg" />
+          </Button>
+        </div>
+        <!-- </div> -->
       </div>
-
-      <div class="w-10 text-center hidden md:block">{progress.rncp.level}</div>
-
-      <div class="w-80 text-sm hidden md:block">{progress.rncp.option}</div>
-
-      <div class="flex flex-col gap-0.5 w-36">
-        <Badge color={getColor(progress.totalProgress)} class="text-lg w-full">
-          {progress.totalProgress.toFixed(2)} %
-        </Badge>
-        <Badge color="none" title="Last updated at">
-          {dayjs(progress.user.lastUpdatedAt).format("DD/MM/YYYY HH:mm")}
-        </Badge>
-      </div>
-
-      <div>
-        <Button
-          size="xs"
-          color="light"
-          class="m-0 px-2"
-          on:click={() => navigate("/rncp-progress/" + progress.user.id)}
-        >
-          <ArrowRightSolid size="lg" />
-        </Button>
-      </div>
-      <!-- </div> -->
-    </div>
-  {/each}
+    {/each}
+  {/if}
 </div>
 
-<div class="mt-2">
+<div class="mt-2 flex w-100 justify-end">
   <Paginator
     totalPage={Math.ceil(filteredPageCount / PER_PAGE)}
     currentPage={page + 1}
@@ -296,5 +405,3 @@
     }}
   />
 </div>
-
-<StudentsSettingsModal bind:isOpen={studentSettingModalOpen} />

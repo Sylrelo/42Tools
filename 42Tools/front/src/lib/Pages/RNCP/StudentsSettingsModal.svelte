@@ -4,8 +4,10 @@
   import { onMount } from "svelte";
   import { httpGet, httpPatch } from "../../../services/http";
   import { showTimeLeft } from "./utils";
+  import type { RncpDefinition } from "@back/src/modules/rncp-definition/rncp-definition.entity";
 
   export let isOpen: boolean = true;
+  export let rncpDefinition: RncpDefinition[];
 
   let apprenticeshipRythm: string[] = [];
 
@@ -20,11 +22,15 @@
 
   let isLoading: boolean = true;
 
-  onMount(async () => {
+  $: if (isOpen === true) {
+    onOpen();
+  }
+
+  async function onOpen() {
     apprenticeshipRythm = await httpGet("/apprenticeship");
 
     getStudentList();
-  });
+  }
 
   $: if ([studentsList, filterOptions]) {
     filteredList = studentsList.filter((s) => {
@@ -62,12 +68,18 @@
   async function updateDate(
     student: Users,
     event: Event,
-    key: "apprenticeshipEndDate" | "apprenticeshipStartDate" | "apprenticeshipRythm",
+    key: "apprenticeshipEndDate" | "apprenticeshipStartDate" | "apprenticeshipRythm" | "apprenticeshipRncp",
   ) {
     const target = event.target as HTMLInputElement | HTMLSelectElement;
 
     try {
-      await httpPatch("/users", student.id, { [key]: target.value });
+      let value: any = target.value;
+
+      if (typeof value === "string" && value.length === 0) {
+        value = null;
+      }
+
+      await httpPatch("/users", student.id, { [key]: value });
     } catch (error: any) {
       getStudentList();
       alert(error?.message);
@@ -117,14 +129,27 @@
             on:change={(e) => updateDate(student, e, "apprenticeshipRythm")}
           />
         </div>
-        <div class="w-72">
+        <div>
+          <Select
+            items={[
+              { name: "None", value: null },
+              ...rncpDefinition.map((r, i) => ({
+                name: `${r.level} - ${r.option}`,
+                value: r.rncpKey,
+              })),
+            ]}
+            bind:value={student.apprenticeshipRncp}
+            on:change={(e) => updateDate(student, e, "apprenticeshipRncp")}
+          />
+        </div>
+        <div class="w-52">
           <Input
             type="date"
             bind:value={student.apprenticeshipStartDate}
             on:change={(e) => updateDate(student, e, "apprenticeshipStartDate")}
           />
         </div>
-        <div class="w-72">
+        <div class="w-52">
           <Input
             type="date"
             bind:value={student.apprenticeshipEndDate}

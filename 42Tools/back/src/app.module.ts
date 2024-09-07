@@ -56,7 +56,6 @@ import { CacheModule } from '@nestjs/cache-manager';
       autoLoadEntities: true,
       synchronize: true,
       logging: ["error", 'warn'],
-
     }),
 
     ScheduleModule.forRoot(),

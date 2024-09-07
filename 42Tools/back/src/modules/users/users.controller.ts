@@ -84,6 +84,7 @@ export class UsersController {
     return await this.userRepository.find({
       where: {
         campusId: request.user.campusId,
+        // activeCursusLevel: Not(-1)
       },
       select: {
         id: true,
@@ -94,6 +95,7 @@ export class UsersController {
         apprenticeshipEndDate: true,
         apprenticeshipStartDate: true,
         apprenticeshipRythm: true,
+        apprenticeshipRncp: true
       },
     });
   }
@@ -156,7 +158,9 @@ export class UsersController {
         'campusId',
         'lastUpdatedAt',
         'lastCachedProgressUpdatedAt',
-        'cursuses'
+        'cursuses',
+        'login',
+        'isStaff'
       ],
     });
   }

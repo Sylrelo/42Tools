@@ -38,7 +38,7 @@ export class UserService {
     private readonly configService: ConfigService,
     private readonly rncpProgressService: RncpProgressService,
     private readonly cursusUserService: CursusUserService,
-  ) {}
+  ) { }
 
   /* -------------------------------------------------------------------------- */
   /*                                    STATS                                   */
@@ -194,7 +194,13 @@ export class UserService {
     await this.repo.update({ id: studentId }, user);
     await this.cursusUserService.updateCursusUserFromApi(studentData.cursus_users);
 
-    await this.updateCachedRncpProgress(studentId);
+    const shouldNotUpdateRncp = (studentData.cursus_users?.filter(c => [4, 6, 7, 9, 64, 65].includes(c.id)).length === studentData?.cursus_users?.length) || ![1, 9, 41].includes(user.campusId)
+
+    if (shouldNotUpdateRncp === false) {
+      await this.updateCachedRncpProgress(studentId);
+    } else {
+      this.logger.debug(`-> ${user.level} ${user.campusId}`)
+    }
   }
 
   async updateCachedRncpProgress(studentId: number) {

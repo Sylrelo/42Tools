@@ -38,6 +38,9 @@ export class RncpDefinition {
     @Column({ default: 0 })
     proExperienceRequired: number
 
+    @Column({ nullable: false, default: "0-0" })
+    rncpKey: string;
+
     constructor(id?: number) {
         this.id = id ?? undefined
     }

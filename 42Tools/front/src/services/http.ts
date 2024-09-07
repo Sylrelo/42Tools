@@ -73,9 +73,9 @@ async function httpRequest(method: string, endpoint: string, data?: any) {
     else return await response.text();
   } catch (error: any) {
     //TODO : CHange
-    userSession.set(null);
-    userError.set(error?.message);
-    window.localStorage.clear();
+    // userSession.set(null);
+    // userError.set(error?.message);
+    // window.localStorage.clear();
     throw new Error(error?.message);
   }
 }

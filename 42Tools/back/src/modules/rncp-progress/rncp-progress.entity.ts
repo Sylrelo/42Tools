@@ -33,4 +33,7 @@ export class CachedRncpProgress {
 
   @Column({ default: 0, type: 'float' })
   totalProgress: number;
+
+  // Only for RNCP Search page
+  blocksProgress: number[];
 }

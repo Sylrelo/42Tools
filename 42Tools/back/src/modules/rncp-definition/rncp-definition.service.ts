@@ -27,7 +27,7 @@ export class RncpDefinitionService {
 
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
-  ) {}
+  ) { }
 
   async emptyCache() {
     await this.cacheManager.del(RncpDefinitionService.CACHE_KEY);
@@ -51,6 +51,7 @@ export class RncpDefinitionService {
         proExperienceRequired: true,
         totalProjectCount: true,
         totalProjectExperience: true,
+        rncpKey: true,
         projects: {
           id: true,
           project: {
@@ -80,6 +81,7 @@ export class RncpDefinitionService {
 
       if (key in result === false) {
         result[key] = {
+          rncpKey: rncp.rncpKey,
           level: rncp.level,
           option: rncp.option,
           sections: [],

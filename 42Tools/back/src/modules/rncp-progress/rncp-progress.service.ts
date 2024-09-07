@@ -18,7 +18,7 @@ export class RncpProgressService {
     @InjectRepository(CachedRncpProgress)
     private readonly repo: Repository<CachedRncpProgress>,
     private readonly rncpDefinitionService: RncpDefinitionService,
-  ) {}
+  ) { }
 
   async getProgressByUserId(userId: number) {
     const result = await this.repo.find({
@@ -48,17 +48,27 @@ export class RncpProgressService {
       SELECT
           rncp.option AS rncp_option,
           rncp.level AS rncp_level,
+          rncp.rncp_key AS rncp_rncp_key,
 
           users.login AS user_login,
           users.id AS user_id,
           users.full_name as user_full_name,
           users.profile_picture as user_profile_picture,
-          users.apprenticeship_start_date as user_apprenticeship_start_date,
-          users.apprenticeship_end_date as user_apprenticeship_end_date,
+
+          users.apprenticeship_rncp as user_rncp,
+          users.apprenticeship_rythm as user_rythm,
+          TO_CHAR(users.apprenticeship_start_date, 'YYYY-MM-DD') as user_apprenticeship_start_date,
+          TO_CHAR(users.apprenticeship_end_date, 'YYYY-MM-DD') as user_apprenticeship_end_date,
+
           (ARRAY_AGG(users.last_updated_at))[1] AS user_last_updated_at,
           (ARRAY_AGG(users.pool_year))[1] AS user_pool_year,
 
-          AVG(cached_rncp_progress.total_progress) AS cached_rncp_progress_total_progress
+          AVG(cached_rncp_progress.total_progress) AS cached_rncp_progress_total_progress,
+
+          ARRAY_AGG(cached_rncp_progress.total_progress) AS cached_rncp_blocks_progress,
+          (ARRAY_AGG(cached_rncp_progress.level_progress))[1] AS cached_rncp_level_progress,
+          (ARRAY_AGG(cached_rncp_progress.event_progress))[1] AS cached_rncp_events_progress
+
       FROM
           cached_rncp_progress
       JOIN
@@ -70,8 +80,11 @@ export class RncpProgressService {
       GROUP BY
           rncp.option,
           rncp.level,
+          rncp.rncp_key,
 
           users.login,
+          users.apprenticeship_rncp,
+          users.apprenticeship_rythm,
           users.id,
           users.full_name,
           users.profile_picture,
@@ -87,20 +100,27 @@ export class RncpProgressService {
 
       rncpProgress.id = randomUUID();
       rncpProgress.totalProgress = r.cached_rncp_progress_total_progress;
+      rncpProgress.levelProgress = r.cached_rncp_level_progress;
+      rncpProgress.eventProgress = r.cached_rncp_events_progress;
+      rncpProgress.blocksProgress = r.cached_rncp_blocks_progress as number[];
 
       rncpProgress.user = new Users(r.user_id);
       rncpProgress.user.fullName = r.user_full_name;
       rncpProgress.user.login = r.user_login;
-      rncpProgress.user.apprenticeshipStartDate = r.user_apprenticeship_start_date;
-      rncpProgress.user.apprenticeshipEndDate = r.user_apprenticeship_end_date;
       rncpProgress.user.profilePicture = r.user_profile_picture;
       rncpProgress.user.lastUpdatedAt = r.user_last_updated_at;
       rncpProgress.user.poolYear = r.user_pool_year;
+
+      rncpProgress.user.apprenticeshipStartDate = r.user_apprenticeship_start_date;
+      rncpProgress.user.apprenticeshipEndDate = r.user_apprenticeship_end_date;
+      rncpProgress.user.apprenticeshipRncp = r.user_rncp;
+      rncpProgress.user.apprenticeshipRythm = r.user_rythm;
 
       rncpProgress.rncp = new RncpDefinition();
 
       rncpProgress.rncp.level = r.rncp_level;
       rncpProgress.rncp.option = r.rncp_option;
+      rncpProgress.rncp.rncpKey = r.rncp_rncp_key;
 
       return rncpProgress;
     });
